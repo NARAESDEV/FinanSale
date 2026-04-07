@@ -106,9 +106,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 width: double.infinity,
                 height: 55,
                 child: ElevatedButton(
-                  onPressed: () {
-                    // Navegación al Dashboard próximamente
-                  },
+                  onPressed: () => context.go('/home'),
+
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF3E77BC),
                     shape: RoundedRectangleBorder(

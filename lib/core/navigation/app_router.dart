@@ -1,4 +1,5 @@
 import 'package:finansale/features/auth/presentation/forgot_password_screen.dart';
+import 'package:finansale/features/hub/presentation/hub_screen.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/login_screen.dart';
 
@@ -11,6 +12,7 @@ class AppRouter {
         path: '/forgot-password',
         builder: (context, state) => const ForgotPasswordScreen(),
       ),
+      GoRoute(path: '/home', builder: (context, state) => const HubScreen()),
     ],
   );
 }
