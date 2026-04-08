@@ -5,6 +5,7 @@ class NaraesHeader extends StatelessWidget {
   final String? subtitle;
   final bool isCompact;
   final VoidCallback? onBack;
+  final Widget? bottomWidget;
 
   const NaraesHeader({
     super.key,
@@ -12,17 +13,15 @@ class NaraesHeader extends StatelessWidget {
     this.subtitle,
     this.isCompact = false,
     this.onBack,
+    this.bottomWidget,
   });
 
   @override
   Widget build(BuildContext context) {
-    // Definimos la altura según el tipo
-    final double headerHeight = isCompact ? 180 : 260;
-
     return Container(
       width: double.infinity,
-      height: headerHeight,
-      padding: const EdgeInsets.symmetric(horizontal: 25),
+
+      padding: const EdgeInsets.only(left: 25, right: 25, top: 15, bottom: 45),
       decoration: const BoxDecoration(
         color: Color(0xFF3E77BC),
         borderRadius: BorderRadius.only(
@@ -31,13 +30,17 @@ class NaraesHeader extends StatelessWidget {
         ),
       ),
       child: SafeArea(
+        // Quitamos el bottom del SafeArea para tener control total
+        bottom: false,
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min, // El container se ajusta al contenido
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Fila Principal: Textos y Avatar
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Columna de Textos
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -52,49 +55,60 @@ class NaraesHeader extends StatelessWidget {
                           ),
                           onPressed: onBack,
                           padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
                           alignment: Alignment.centerLeft,
                         ),
+
+                      // Ajustamos el "Hola," para que esté pegado arriba
                       if (!isCompact)
                         Text(
                           "Hola,",
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.8),
-                            fontSize: 16,
+                            fontSize: 15,
+                            height: 1.0,
                           ),
                         ),
+
+                      const SizedBox(height: 2), // Espacio mínimo
+
                       Text(
                         title,
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 24,
+                          fontSize: 26,
                           fontWeight: FontWeight.bold,
+                          height: 1.1,
                         ),
                       ),
+
                       if (subtitle != null)
                         Container(
-                          margin: const EdgeInsets.only(top: 5),
+                          margin: const EdgeInsets.only(top: 8),
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
+                            horizontal: 10,
+                            vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(8),
+                            color: Colors.white.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
                             subtitle!,
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 11,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ),
                     ],
                   ),
                 ),
-                // Avatar
+
+                // Avatar elevado
                 CircleAvatar(
-                  radius: isCompact ? 25 : 35,
+                  radius: isCompact ? 24 : 34,
                   backgroundColor: Colors.white.withOpacity(0.2),
                   child: const Icon(
                     Icons.person,
@@ -104,6 +118,12 @@ class NaraesHeader extends StatelessWidget {
                 ),
               ],
             ),
+
+            // Si hay barra de progreso, aparece abajo con espacio controlado
+            if (bottomWidget != null) ...[
+              const SizedBox(height: 25),
+              bottomWidget!,
+            ],
           ],
         ),
       ),
