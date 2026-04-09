@@ -94,7 +94,7 @@ class RhDashboardPage extends StatelessWidget {
                               // Renderizado condicional: Se oculta si el estado es nulo
                               if (data.ultimaSolicitud != null) ...[
                                 const _SectionHeader(
-                                  title: "ESTADO DE SOLICITUD ",
+                                  title: "Estado de la solicitud ",
                                 ),
                                 const SizedBox(height: 10),
                                 PersonalizadoCard(

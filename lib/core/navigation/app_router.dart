@@ -7,7 +7,10 @@ import '../../features/hub/presentation/main_wrapper.dart';
 import '../../features/rh/presentation/rh_dashboard_page.dart';
 
 class AppRouter {
+  static final GlobalKey<NavigatorState> rootNavigatorKey =
+      GlobalKey<NavigatorState>();
   static final router = GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: '/login',
     routes: [
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),

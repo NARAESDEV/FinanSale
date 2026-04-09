@@ -1,3 +1,4 @@
+import 'package:finansale/core/auth/session_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -39,6 +40,10 @@ class MainApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Naraes App',
       routerConfig: AppRouter.router,
+      builder: (context, child) {
+        // El SessionManager envuelve a toda la navegación
+        return SessionManager(child: child!);
+      },
     );
   }
 }
