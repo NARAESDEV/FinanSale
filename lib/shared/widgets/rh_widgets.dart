@@ -1,9 +1,11 @@
+import 'package:finansale/features/rh/data/models/rh_dashboard_model.dart';
 import 'package:flutter/material.dart';
 
 // 1. Círculos de Resumen (Goce, Plan, Ley)
 class CircularStat extends StatelessWidget {
   final String value, label;
   final Color color;
+
   const CircularStat({
     super.key,
     required this.value,
@@ -50,54 +52,68 @@ class CircularStat extends StatelessWidget {
   }
 }
 
-// 2. Stepper de Estado
+// 2. Stepper de Estado DINÁMICO
 class StatusStepper extends StatelessWidget {
-  const StatusStepper({super.key});
+  final List<EstadoDetalle> estados;
+
+  const StatusStepper({super.key, required this.estados});
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        _step(Icons.check_circle, "Enviada", true),
-        _line(true),
-        _step(Icons.access_time_filled, "Pendiente", true, isCurrent: true),
-        _line(false),
-        _step(Icons.radio_button_unchecked, "Aprobada", false),
-      ],
+    if (estados.isEmpty) return const SizedBox();
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 10),
+        child: Row(
+          children: estados.asMap().entries.map((entry) {
+            int idx = entry.key;
+            EstadoDetalle e = entry.value;
+            bool isLast = idx == estados.length - 1;
+
+            return Row(
+              children: [
+                _buildStep(e),
+                if (!isLast) _buildLine(e.pasado || e.actual),
+              ],
+            );
+          }).toList(),
+        ),
+      ),
     );
   }
 
-  Widget _step(
-    IconData icon,
-    String label,
-    bool active, {
-    bool isCurrent = false,
-  }) {
-    Color color = active
-        ? (isCurrent ? const Color(0xFF3E77BC) : Colors.green)
-        : Colors.grey.shade300;
+  Widget _buildStep(EstadoDetalle e) {
+    Color color = e.actual
+        ? const Color(0xFF3E77BC)
+        : (e.pasado ? Colors.green : Colors.grey.shade300);
+    IconData icon = e.pasado
+        ? Icons.check_circle
+        : (e.actual ? Icons.access_time_filled : Icons.radio_button_unchecked);
+
     return Column(
       children: [
-        Icon(icon, color: color, size: 28),
+        Icon(icon, color: color, size: 24),
+        const SizedBox(height: 4),
         Text(
-          label,
+          e.nombre,
           style: TextStyle(
-            fontSize: 10,
+            fontSize: 9,
             color: color,
-            fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+            fontWeight: e.actual ? FontWeight.bold : FontWeight.normal,
           ),
         ),
       ],
     );
   }
 
-  Widget _line(bool active) {
-    return Expanded(
-      child: Container(
-        height: 2,
-        color: active ? Colors.green : Colors.grey.shade200,
-        margin: const EdgeInsets.only(bottom: 15),
-      ),
+  Widget _buildLine(bool active) {
+    return Container(
+      width: 30,
+      height: 2,
+      color: active ? Colors.green : Colors.grey.shade200,
+      margin: const EdgeInsets.only(bottom: 15),
     );
   }
 }

@@ -1,97 +1,162 @@
-import 'package:finansale/shared/widgets/anuncio_card.dart';
-import 'package:finansale/shared/widgets/naraes_header.dart';
-import 'package:finansale/shared/widgets/personalizado_card.dart';
-import 'package:finansale/shared/widgets/rh_widgets.dart';
+import 'package:finansale/features/auth/presentation/cubit/auth_cubit.dart';
+import 'package:finansale/features/auth/presentation/cubit/auth_state.dart';
+import 'package:finansale/features/rh/data/models/rh_dashboard_model.dart';
+import 'package:finansale/features/rh/presentation/cubit/rh_cubit.dart';
+import 'package:finansale/features/rh/presentation/cubit/rh_state.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+
+// Componentes compartidos
+import '../../../../shared/widgets/anuncio_card.dart';
+import '../../../../shared/widgets/naraes_header.dart';
+import '../../../../shared/widgets/personalizado_card.dart';
+import '../../../../shared/widgets/rh_widgets.dart';
 
 class RhDashboardPage extends StatelessWidget {
   const RhDashboardPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // 1. EL GUARDIÁN DE NAVEGACIÓN (PopScope)
+    // Obtenemos el nombre del usuario desde el AuthCubit global
+    final authState = context.watch<AuthCubit>().state;
+    final nombreUsuario = (authState is AuthAuthenticated)
+        ? authState.user.nombreCompleto
+        : "Usuario";
+    final rhCubit = context.read<RhCubit>();
+    if (rhCubit.state is RhLoading) {
+      final user = (context.read<AuthCubit>().state as AuthAuthenticated).user;
+      rhCubit.getDashboardData(user);
+    }
     return PopScope(
-      canPop: false, // Bloqueamos la salida nativa para que no cierre la app
+      canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
-
-        // Al usar .go('/hub'), reseteamos la pila hacia el selector de módulos
-        // Esto evita que el usuario se quede "atrapado" o salga de la app
         context.go('/hub');
       },
       child: Scaffold(
         backgroundColor: const Color(0xFFF9FCFF),
-        body: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          child: Column(
-            children: [
-              // 2. HEADER: Información de usuario y barra de progreso (61%)
-              _buildHeader(),
+        body: BlocBuilder<RhCubit, RhState>(
+          builder: (context, state) {
+            // Estado de carga inicial
+            if (state is RhLoading) {
+              return const Center(
+                child: CircularProgressIndicator(color: Color(0xFF3E77BC)),
+              );
+            }
 
-              // 3. CUERPO: Contenido que "muerde" el header
-              Transform.translate(
-                offset: const Offset(0, -40),
+            // Manejo de errores traducidos
+            if (state is RhError) {
+              return Center(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: const EdgeInsets.all(20),
+                  child: Text(
+                    state.message,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.redAccent,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              );
+            }
+
+            // Carga de datos exitosa
+            if (state is RhLoaded) {
+              final data = state.dashboardData;
+
+              return RefreshIndicator(
+                onRefresh: () async {
+                  final user =
+                      (context.read<AuthCubit>().state as AuthAuthenticated)
+                          .user;
+                  await context.read<RhCubit>().getDashboardData(user);
+                },
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
                   child: Column(
                     children: [
-                      // WIDGET: Resumen estadístico (Círculos Goce, Plan, Ley)
-                      _buildResumenPeriodo(),
+                      // Encabezado con información dinámica y progreso
+                      _buildHeader(nombreUsuario, data.resumen),
 
-                      const SizedBox(height: 20),
+                      Transform.translate(
+                        offset: const Offset(0, -40),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Column(
+                            children: [
+                              // Card de resumen con círculos estadísticos
+                              _buildResumenPeriodo(data.resumen),
 
-                      // WIDGET: Estado de última solicitud (Stepper de pasos)
-                      const PersonalizadoCard(child: StatusStepper()),
+                              const SizedBox(height: 20),
 
-                      const SizedBox(height: 25),
+                              // Renderizado condicional: Se oculta si el estado es nulo
+                              if (data.ultimaSolicitud != null) ...[
+                                const _SectionHeader(
+                                  title: "ESTADO DE SOLICITUD ",
+                                ),
+                                const SizedBox(height: 10),
+                                PersonalizadoCard(
+                                  child: StatusStepper(
+                                    estados: data.ultimaSolicitud!.estados,
+                                  ),
+                                ),
+                                const SizedBox(height: 25),
+                              ],
 
-                      // SECCIÓN: Aprobaciones Pendientes
-                      const _SectionHeader(title: "Aprobaciones Pendientes"),
-                      const SizedBox(height: 10),
-                      _buildAprobacionBrenda(),
+                              // Sección de aprobaciones obtenidas del backend
+                              const _SectionHeader(
+                                title: "Aprobaciones Pendientes",
+                              ),
+                              const SizedBox(height: 10),
+                              _buildListaAprobaciones(data.aprobaciones),
 
-                      const SizedBox(height: 25),
+                              const SizedBox(height: 25),
 
-                      // WIDGET: Card de Anuncios (Comunicados)
-                      const _SectionHeader(title: "ANUNCIOS"),
-                      const SizedBox(height: 10),
-                      const AnuncioCard(
-                        title: "¡Felicidades a los cumpleañeros!",
-                        description:
-                            "Revisa quién cumple años este mes en tu equipo y envíales un saludo.",
-                        imageUrl:
-                            "https://images.unsplash.com/photo-1513151233558-d860c5398176?q=80&w=1000&auto=format&fit=crop",
-                        category: "CUMPLEAÑOS",
-                        icon: Icons.cake_rounded,
-                        iconColor: Colors.pinkAccent,
+                              // Card de anuncios estática
+                              const _SectionHeader(title: "ANUNCIOS"),
+                              const SizedBox(height: 10),
+                              const AnuncioCard(
+                                title: "¡Felicidades a los cumpleañeros!",
+                                description:
+                                    "Revisa quién cumple años este mes en tu equipo y envíales un saludo.",
+                                imageUrl:
+                                    "https://images.unsplash.com/photo-1513151233558-d860c5398176?q=80&w=1000&auto=format&fit=crop",
+                                category: "CUMPLEAÑOS",
+                                icon: Icons.cake_rounded,
+                                iconColor: Colors.pinkAccent,
+                              ),
+
+                              const SizedBox(height: 120),
+                            ],
+                          ),
+                        ),
                       ),
-
-                      // Espacio para evitar que el Navbar tape el contenido final
-                      const SizedBox(height: 120),
                     ],
                   ),
                 ),
-              ),
-            ],
-          ),
+              );
+            }
+
+            return const SizedBox();
+          },
         ),
       ),
     );
   }
 
-  // --- MÉTODOS DE APOYO (HELPERS) ---
+  // --- Widgets de apoyo ---
 
-  // Construye el encabezado azul
-  Widget _buildHeader() {
+  Widget _buildHeader(String nombre, ResumenPeriodo resumen) {
     return NaraesHeader(
-      title: "Josue Israel",
+      title: nombre,
       bottomWidget: Column(
         children: [
-          const Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
+              const Text(
                 "Progreso de Días",
                 style: TextStyle(
                   color: Colors.white,
@@ -99,8 +164,8 @@ class RhDashboardPage extends StatelessWidget {
                 ),
               ),
               Text(
-                "61%",
-                style: TextStyle(
+                "${(resumen.porcentajeProgreso * 100).toInt()}%",
+                style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                 ),
@@ -108,8 +173,8 @@ class RhDashboardPage extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          const LinearProgressIndicator(
-            value: 0.61,
+          LinearProgressIndicator(
+            value: resumen.porcentajeProgreso,
             backgroundColor: Colors.white24,
             color: Colors.white,
             minHeight: 8,
@@ -119,13 +184,12 @@ class RhDashboardPage extends StatelessWidget {
     );
   }
 
-  // Construye la card de círculos (Gráfica)
-  Widget _buildResumenPeriodo() {
+  Widget _buildResumenPeriodo(ResumenPeriodo resumen) {
     return PersonalizadoCard(
       child: Column(
         children: [
-          const Text(
-            "RESUMEN DEL PERIODO 2025-2026",
+          Text(
+            "RESUMEN DEL PERIODO ${resumen.periodo}",
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w900,
@@ -133,12 +197,24 @@ class RhDashboardPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          const Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              CircularStat(value: "14", label: "GOCE", color: Colors.green),
-              CircularStat(value: "10", label: "PLAN", color: Colors.orange),
-              CircularStat(value: "24", label: "LEY", color: Color(0xFF3E77BC)),
+              CircularStat(
+                value: "${resumen.usados}",
+                label: "GOCE",
+                color: Colors.green,
+              ),
+              CircularStat(
+                value: "${resumen.pendientes}",
+                label: "PLAN",
+                color: Colors.orange,
+              ),
+              CircularStat(
+                value: "${resumen.totales}",
+                label: "LEY",
+                color: const Color(0xFF3E77BC),
+              ),
             ],
           ),
         ],
@@ -146,30 +222,52 @@ class RhDashboardPage extends StatelessWidget {
     );
   }
 
-  // Construye la fila de aprobación
-  Widget _buildAprobacionBrenda() {
-    return const PersonalizadoCard(
-      child: ListTile(
-        contentPadding: EdgeInsets.zero,
-        leading: CircleAvatar(
-          backgroundColor: Color(0xFF3E77BC),
-          child: Icon(Icons.person, color: Colors.white),
+  Widget _buildListaAprobaciones(List<AprobacionPendiente> lista) {
+    if (lista.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 20),
+          child: Text(
+            "No hay solicitudes pendientes",
+            style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
+          ),
         ),
-        title: Text(
-          "Brenda González",
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Text("Vacaciones Anuales • 6 días"),
-        trailing: Icon(Icons.chevron_right),
-      ),
+      );
+    }
+
+    return Column(
+      children: lista.map((item) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: PersonalizadoCard(
+            child: ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+              leading: const CircleAvatar(
+                backgroundColor: Color(0xFF3E77BC),
+                child: Icon(Icons.person, color: Colors.white),
+              ),
+              // PROPIEDADES CON PUNTO, NO CON CORCHETES
+              title: Text(
+                item.nombre,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: Text("Del ${item.fechaInicio} al ${item.fechaFin}"),
+              trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+              onTap: () {
+                // Aquí puedes usar item.id para navegar al detalle
+              },
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 }
 
-// Widget auxiliar para los títulos de sección
 class _SectionHeader extends StatelessWidget {
   final String title;
   const _SectionHeader({required this.title});
+
   @override
   Widget build(BuildContext context) {
     return Row(

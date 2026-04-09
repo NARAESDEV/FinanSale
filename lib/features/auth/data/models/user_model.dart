@@ -6,6 +6,7 @@ class UserModel {
   final String nombreCompleto;
   final String perfil;
   final List<PermissionModel> permisos;
+  String? contrasena;
 
   UserModel({
     required this.correo,
@@ -15,6 +16,7 @@ class UserModel {
     required this.nombreCompleto,
     required this.perfil,
     required this.permisos,
+    this.contrasena,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {

@@ -1,3 +1,4 @@
+import 'package:finansale/shared/widgets/modal_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -132,11 +133,15 @@ class _LoginScreenState extends State<LoginScreen> {
                   }
                   if (state is AuthError) {
                     // Si falla, mostramos el error que viene del API
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(state.message),
-                        backgroundColor: Colors.redAccent,
-                        behavior: SnackBarBehavior.floating,
+                    showDialog(
+                      context: context,
+                      builder: (context) => ModalDialog(
+                        title: "¡Ups! Algo falló",
+                        message:
+                            state.message, // Ya viene traducido por el Cubit
+                        type: DialogType.error,
+                        confirmText: "Entendido",
+                        onConfirm: () => Navigator.pop(context),
                       ),
                     );
                   }

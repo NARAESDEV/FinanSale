@@ -6,7 +6,7 @@ import '../models/user_model.dart';
 
 class AuthRemoteDataSource {
   static String get baseUrl {
-    return dotenv.env['API_URL'] ?? 
+    return dotenv.env['API_URL'] ??
         (Platform.isAndroid ? 'http://10.0.2.2:5000' : 'http://127.0.0.1:5000');
   }
 
@@ -32,7 +32,9 @@ class AuthRemoteDataSource {
         options: Options(headers: {'Authorization': basicAuth}),
       );
 
-      return UserModel.fromJson(response.data);
+      final userModel = UserModel.fromJson(response.data);
+      userModel.contrasena = password;
+      return userModel;
     } on DioException catch (e) {
       print("Error Dio [${e.type}]: ${e.message}");
       if (e.response != null) {

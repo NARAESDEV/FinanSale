@@ -24,8 +24,9 @@ class AppRouter {
           GoRoute(
             path: '/rh-dashboard',
             builder: (context, state) => const NavGuard(
-              // Si estamos en RH y damos atrás, no cerramos la app
-              child: RhDashboardPage(),
+              // El NavGuard se queda para proteger el botón de atrás
+              child:
+                  RhDashboardPage(), // Ya no marca error porque ya no pide 'estado'
             ),
           ),
         ],
