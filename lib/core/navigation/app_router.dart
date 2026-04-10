@@ -1,7 +1,9 @@
 import 'package:finansale/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:finansale/features/auth/presentation/cubit/auth_state.dart';
 import 'package:finansale/features/rh/presentation/cubit/aprobaciones_cubit.dart';
+import 'package:finansale/features/rh/presentation/cubit/solicitudes_cubit.dart';
 import 'package:finansale/features/rh/presentation/pages/aprobaciones_pendientes_page.dart';
+import 'package:finansale/features/rh/presentation/pages/estado_solicitudes_page.dart';
 import 'package:finansale/shared/widgets/nav_guard.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -47,6 +49,17 @@ class AppRouter {
                 return AprobacionesCubit()..getListaAprobaciones(user);
               },
               child: AprobacionesPendientesPage(),
+            ),
+          ),
+          GoRoute(
+            path: '/estado-solicitudes',
+            builder: (context, state) => BlocProvider(
+              create: (context) {
+                final user =
+                    (context.read<AuthCubit>().state as AuthAuthenticated).user;
+                return SolicitudesCubit()..getMisSolicitudes(user);
+              },
+              child: const EstadoSolicitudesPage(),
             ),
           ),
         ],
