@@ -17,7 +17,7 @@ class SessionManager extends StatefulWidget {
 class _SessionManagerState extends State<SessionManager>
     with WidgetsBindingObserver {
   Timer? _inactivityTimer;
-  // Tiempos para pruebas (cámbialos a minutos después)
+  // Tiempos para pruebas
   static const _inactivityDuration = Duration(seconds: 1500);
   static const _graceDuration = Duration(seconds: 300);
 

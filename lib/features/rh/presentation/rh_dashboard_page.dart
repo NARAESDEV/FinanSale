@@ -146,8 +146,6 @@ class RhDashboardPage extends StatelessWidget {
     );
   }
 
-  // --- Widgets de apoyo ---
-
   Widget _buildHeader(String nombre, ResumenPeriodo resumen) {
     return NaraesHeader(
       title: nombre,
