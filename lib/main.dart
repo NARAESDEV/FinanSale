@@ -37,6 +37,7 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
+      // showPerformanceOverlay: true,
       debugShowCheckedModeBanner: false,
       title: 'Naraes App',
       routerConfig: AppRouter.router,

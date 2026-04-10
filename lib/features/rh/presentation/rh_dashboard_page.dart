@@ -106,8 +106,11 @@ class RhDashboardPage extends StatelessWidget {
                               ],
 
                               // Sección de aprobaciones obtenidas del backend
-                              const _SectionHeader(
+                              _SectionHeader(
                                 title: "Aprobaciones Pendientes",
+                                onVerTodas: () {
+                                  context.push('/lista-aprobaciones');
+                                },
                               ),
                               const SizedBox(height: 10),
                               _buildListaAprobaciones(data.aprobaciones),
@@ -264,7 +267,8 @@ class RhDashboardPage extends StatelessWidget {
 
 class _SectionHeader extends StatelessWidget {
   final String title;
-  const _SectionHeader({required this.title});
+  final VoidCallback? onVerTodas;
+  const _SectionHeader({required this.title, this.onVerTodas});
 
   @override
   Widget build(BuildContext context) {
@@ -275,11 +279,17 @@ class _SectionHeader extends StatelessWidget {
           title,
           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
-        const Text(
-          "Ver todas",
-          style: TextStyle(
-            color: Color(0xFF3E77BC),
-            fontWeight: FontWeight.bold,
+        InkWell(
+          onTap: onVerTodas,
+          child: const Padding(
+            padding: EdgeInsets.all(4.0),
+            child: Text(
+              "Ver todas",
+              style: TextStyle(
+                color: Color(0xFF3E77BC),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ),
       ],
