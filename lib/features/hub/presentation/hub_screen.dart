@@ -14,7 +14,8 @@ class HubScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final authState = context.watch<AuthCubit>().state;
+    // ✅ read en lugar de watch — el usuario no cambia mientras está aquí
+    final authState = context.read<AuthCubit>().state;
     if (authState is! AuthAuthenticated) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
@@ -22,7 +23,7 @@ class HubScreen extends StatelessWidget {
     final user = authState.user;
     final modulosPermitidos = user.permisos.where((p) => p.lectura).toList();
     return PopScope(
-      canPop: false, // Bloqueamos la salida automática
+      canPop: true, // Bloqueamos la salida automática
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
         // Si intenta salir, disparamos nuestra modal personalizada

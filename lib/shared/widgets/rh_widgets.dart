@@ -22,7 +22,8 @@ class CircularStat extends StatelessWidget {
           height: 75,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: color.withOpacity(0.4), width: 4),
+            // ✅ withValues en lugar de withOpacity — evita saveLayer
+            border: Border.all(color: color.withValues(alpha: 0.4), width: 4),
           ),
           child: Center(
             child: Column(

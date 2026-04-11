@@ -44,15 +44,22 @@ class AnuncioCard extends StatelessWidget {
 
           const SizedBox(height: 15),
 
-          // Imagen del anuncio con bordes redondeados
-          Container(
-            height: 160,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              image: DecorationImage(
-                image: NetworkImage(imageUrl),
-                fit: BoxFit.cover,
+          // ✅ Imagen con ClipRRect + Image.network con cacheWidth
+          // Evita re-decodificación del JPEG en el raster thread
+          ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Image.network(
+              imageUrl,
+              height: 160,
+              width: double.infinity,
+              fit: BoxFit.cover,
+              cacheWidth: 600, // Limita decodificación a 600px de ancho
+              errorBuilder: (context, error, stackTrace) => Container(
+                height: 160,
+                color: const Color(0xFFE2E8F0),
+                child: const Center(
+                  child: Icon(Icons.image_not_supported, color: Colors.grey),
+                ),
               ),
             ),
           ),

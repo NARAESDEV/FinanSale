@@ -33,11 +33,8 @@ class AppRouter {
         routes: [
           GoRoute(
             path: '/rh-dashboard',
-            builder: (context, state) => const NavGuard(
-              // El NavGuard se queda para proteger el botón de atrás
-              child:
-                  RhDashboardPage(), // Ya no marca error porque ya no pide 'estado'
-            ),
+            // ✅ Quitado NavGuard redundante — RhDashboardPage ya tiene PopScope
+            builder: (context, state) => const RhDashboardPage(),
           ),
           GoRoute(
             path: '/lista-aprobaciones',

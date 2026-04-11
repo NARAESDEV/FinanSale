@@ -18,18 +18,17 @@ class RhDashboardPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Obtenemos el nombre del usuario desde el AuthCubit global
-    final authState = context.watch<AuthCubit>().state;
+    // ✅ read en lugar de watch — el nombre no cambia en runtime
+    final authState = context.read<AuthCubit>().state;
     final nombreUsuario = (authState is AuthAuthenticated)
         ? authState.user.nombreCompleto
         : "Usuario";
-    final rhCubit = context.read<RhCubit>();
-    if (rhCubit.state is RhLoading) {
-      final user = (context.read<AuthCubit>().state as AuthAuthenticated).user;
-      rhCubit.getDashboardData(user);
-    }
+
+    // ✅ Eliminada la doble llamada a getDashboardData
+    // Ya se invoca desde hub_screen.dart antes de navegar
+
     return PopScope(
-      canPop: false,
+      canPop: true,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
         context.go('/hub');
@@ -181,7 +180,7 @@ class RhDashboardPage extends StatelessWidget {
           const SizedBox(height: 8),
           LinearProgressIndicator(
             value: resumen.porcentajeProgreso,
-            backgroundColor: Colors.white24,
+            backgroundColor: const Color(0x3DFFFFFF), // white24 equivalente
             color: Colors.white,
             minHeight: 8,
           ),
@@ -196,7 +195,7 @@ class RhDashboardPage extends StatelessWidget {
         children: [
           Text(
             "RESUMEN DEL PERIODO ${resumen.periodo}",
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w900,
               color: Colors.grey,
