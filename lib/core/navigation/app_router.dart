@@ -3,7 +3,7 @@ import 'package:finansale/features/auth/presentation/cubit/auth_state.dart';
 import 'package:finansale/features/hub/presentation/perfil_page.dart';
 import 'package:finansale/features/rh/presentation/cubit/aprobaciones_cubit.dart';
 import 'package:finansale/features/rh/presentation/cubit/solicitudes_cubit.dart';
-import 'package:finansale/features/rh/presentation/historial_page.dart';
+import 'package:finansale/features/rh/presentation/pages/historial_page.dart';
 import 'package:finansale/features/rh/presentation/pages/aprobaciones_pendientes_page.dart';
 import 'package:finansale/features/rh/presentation/pages/estado_solicitudes_page.dart';
 import 'package:finansale/features/rh/presentation/pages/solicitudes_page.dart';
@@ -68,7 +68,23 @@ class AppRouter {
           ),
           GoRoute(
             path: '/historial',
-            builder: (context, state) => const HistorialPage(),
+            pageBuilder: (context, state) => NoTransitionPage(
+              child: BlocProvider<SolicitudesCubit>(
+                create: (context) {
+                  final authState = context.read<AuthCubit>().state;
+
+                  // Validación segura para evitar crash si el estado de Auth parpadea
+                  if (authState is AuthAuthenticated) {
+                    return SolicitudesCubit()
+                      ..getMisSolicitudes(authState.user);
+                  }
+
+                  // Fallback por seguridad
+                  return SolicitudesCubit();
+                },
+                child: const HistorialPage(),
+              ),
+            ),
           ),
           GoRoute(
             path: '/perfil',

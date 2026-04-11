@@ -26,9 +26,11 @@ class SolicitudesCubit extends Cubit<SolicitudesState> {
 
       // OJO AQUÍ: Extraemos el arreglo que viene dentro de la llave "solicitudes"
       final List<dynamic> data = response.data['solicitudes'] ?? [];
+      final Map<String, dynamic> resumen =
+          response.data['resumen_periodo'] ?? {};
       final lista = data.map((item) => SolicitudItem.fromJson(item)).toList();
 
-      emit(SolicitudesLoaded(lista));
+      emit(SolicitudesLoaded(lista, resumen: resumen));
     } catch (e) {
       emit(SolicitudesError(ErrorMapper.translate(e)));
     }
