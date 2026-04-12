@@ -14,7 +14,6 @@ class HubScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ✅ read en lugar de watch — el usuario no cambia mientras está aquí
     final authState = context.read<AuthCubit>().state;
     if (authState is! AuthAuthenticated) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
