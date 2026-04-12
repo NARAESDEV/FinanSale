@@ -1,5 +1,6 @@
 import 'package:finansale/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:finansale/features/auth/presentation/cubit/auth_state.dart';
+import 'package:finansale/features/hub/presentation/cubit/perfil_cubit.dart';
 import 'package:finansale/features/hub/presentation/perfil_page.dart';
 import 'package:finansale/features/rh/presentation/cubit/aprobaciones_cubit.dart';
 import 'package:finansale/features/rh/presentation/cubit/solicitudes_cubit.dart';
@@ -88,7 +89,19 @@ class AppRouter {
           ),
           GoRoute(
             path: '/perfil',
-            builder: (context, state) => const PerfilPage(),
+            pageBuilder: (context, state) => NoTransitionPage(
+              // Inyección del Cubit
+              child: BlocProvider<PerfilCubit>(
+                create: (context) {
+                  final authState = context.read<AuthCubit>().state;
+                  if (authState is AuthAuthenticated) {
+                    return PerfilCubit()..getPerfilUsuario(authState.user);
+                  }
+                  return PerfilCubit();
+                },
+                child: const PerfilPage(),
+              ),
+            ),
           ),
         ],
       ),
