@@ -18,14 +18,10 @@ class RhDashboardPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ✅ read en lugar de watch — el nombre no cambia en runtime
     final authState = context.read<AuthCubit>().state;
     final nombreUsuario = (authState is AuthAuthenticated)
         ? authState.user.nombreCompleto
         : "Usuario";
-
-    // ✅ Eliminada la doble llamada a getDashboardData
-    // Ya se invoca desde hub_screen.dart antes de navegar
 
     return PopScope(
       canPop: true,

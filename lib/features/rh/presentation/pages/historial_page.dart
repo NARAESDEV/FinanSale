@@ -36,7 +36,7 @@ class HistorialPage extends StatelessWidget {
               }
 
               if (state is SolicitudesLoaded) {
-                // Validamos que el mapa de resumen exista y extraemos valores de forma segura
+                //  mapa de resumen exista y extraemos valores de forma segura
                 final resumen = state.resumen;
                 final lista = state.solicitudes;
 
