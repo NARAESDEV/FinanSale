@@ -8,6 +8,7 @@ import 'package:finansale/features/rh/presentation/pages/historial_page.dart';
 import 'package:finansale/features/rh/presentation/pages/aprobaciones_pendientes_page.dart';
 import 'package:finansale/features/rh/presentation/pages/estado_solicitudes_page.dart';
 import 'package:finansale/features/rh/presentation/pages/solicitudes_page.dart';
+import 'package:finansale/features/splash/presentation/splash_page.dart';
 import 'package:finansale/shared/widgets/nav_guard.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -22,8 +23,10 @@ class AppRouter {
       GlobalKey<NavigatorState>();
   static final router = GoRouter(
     navigatorKey: rootNavigatorKey,
-    initialLocation: '/login',
+    initialLocation: '/splash',
+    // initialLocation: '/login',
     routes: [
+      GoRoute(path: '/splash', builder: (context, state) => const SplashPage()),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
 
       // Protegemos el Hub para que no se salga de la app con un gesto
