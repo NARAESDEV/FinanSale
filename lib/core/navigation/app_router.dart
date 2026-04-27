@@ -2,13 +2,19 @@ import 'package:finansale/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:finansale/features/auth/presentation/cubit/auth_state.dart';
 import 'package:finansale/features/hub/presentation/cubit/perfil_cubit.dart';
 import 'package:finansale/features/hub/presentation/perfil_page.dart';
+import 'package:finansale/features/rh/data/datasources/rh_remote_data_source.dart';
+import 'package:finansale/features/rh/domain/repositories/rh_repository_impl.dart';
 import 'package:finansale/features/rh/presentation/cubit/aprobaciones_cubit.dart';
 import 'package:finansale/features/rh/presentation/cubit/solicitudes_cubit.dart';
+import 'package:finansale/features/rh/presentation/cubit/subtipos/subtipos_cubit.dart';
 import 'package:finansale/features/rh/presentation/pages/historial_page.dart';
 import 'package:finansale/features/rh/presentation/pages/aprobaciones_pendientes_page.dart';
 import 'package:finansale/features/rh/presentation/pages/estado_solicitudes_page.dart';
+import 'package:finansale/features/rh/presentation/pages/nueva_solicitud_page.dart';
 import 'package:finansale/features/rh/presentation/pages/solicitudes_page.dart';
 import 'package:finansale/features/splash/presentation/splash_page.dart';
+import 'package:finansale/features/workspace/cubit/workspace_cubit.dart';
+import 'package:finansale/features/workspace/presentation/workspace_page.dart';
 import 'package:finansale/shared/widgets/nav_guard.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -27,6 +33,13 @@ class AppRouter {
     // initialLocation: '/login',
     routes: [
       GoRoute(path: '/splash', builder: (context, state) => const SplashPage()),
+      GoRoute(
+        path: '/workspace',
+        builder: (context, state) => BlocProvider(
+          create: (context) => WorkspaceCubit(),
+          child: const WorkspacePage(),
+        ),
+      ),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
 
       // Protegemos el Hub para que no se salga de la app con un gesto
@@ -68,7 +81,26 @@ class AppRouter {
 
           GoRoute(
             path: '/solicitudes',
-            builder: (context, state) => const SolicitudesPage(),
+            pageBuilder: (context, state) => NoTransitionPage(
+              child: BlocProvider<SubtiposCubit>(
+                create: (context) {
+                  // 1. Extraemos el estado de Autenticación
+                  final authState = context.read<AuthCubit>().state;
+
+                  final cubit = SubtiposCubit(
+                    RhRepositoryImpl(RhRemoteDataSource()),
+                  );
+
+                  // 2. Si el usuario está logueado, le pasamos sus datos a la petición
+                  if (authState is AuthAuthenticated) {
+                    cubit.fetchSubtipos(authState.user);
+                  }
+
+                  return cubit;
+                },
+                child: const NuevaSolicitudPage(),
+              ),
+            ),
           ),
           GoRoute(
             path: '/historial',

@@ -20,7 +20,7 @@ class SolicitudesCubit extends Cubit<SolicitudesState> {
           'Basic ${base64Encode(utf8.encode('${user.correo}:${user.contrasena}'))}';
 
       final response = await _dio.get(
-        '/solicitudes',
+        '/solicitudes/',
         options: Options(headers: {'Authorization': basicAuth}),
       );
 

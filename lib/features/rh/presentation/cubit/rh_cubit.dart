@@ -15,12 +15,13 @@ class RhCubit extends Cubit<RhState> {
   Future<void> getDashboardData(UserModel user) async {
     try {
       emit(RhLoading());
-      
+
       // Construimos el basic auth con los datos del usuario logueado
-      final String basicAuth = 'Basic ${base64Encode(utf8.encode('${user.correo}:${user.contrasena}'))}';
+      final String basicAuth =
+          'Basic ${base64Encode(utf8.encode('${user.correo}:${user.contrasena}'))}';
 
       final response = await _dio.get(
-        'aprobaciones/movil/inicio',
+        '/aprobaciones/movil/inicio',
         options: Options(headers: {'Authorization': basicAuth}),
       );
       final data = RhDashboardModel.fromJson(response.data);

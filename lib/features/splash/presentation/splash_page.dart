@@ -1,3 +1,5 @@
+import 'package:finansale/core/network/dio_client.dart';
+import 'package:finansale/shared/services/storage_service.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
@@ -18,12 +20,25 @@ class _SplashPageState extends State<SplashPage>
     super.initState();
     _controller = AnimationController(vsync: this);
 
-    // Listener de alto rendimiento: Escucha el estado de la animación
-    _controller.addStatusListener((status) {
+    _controller.addStatusListener((status) async {
       if (status == AnimationStatus.completed) {
-        // En el milisegundo que termina, redirige al Login (o al Dashboard si ya hay sesión)
-        if (mounted) {
+        try {
+          final savedUrl = await StorageService.instance.getWorkspace();
+
+          if (!mounted) return;
+
+          // Si hay URL, pre-configuramos Dio para que esté listo
+          if (savedUrl != null) {
+            DioClient.setBaseUrl(savedUrl);
+          }
+
+          // Tanto si hay URL como si no, el nuevo destino unificado es el Login
           context.go('/login');
+        } catch (e) {
+          debugPrint("Error crítico en DB durante Splash: $e");
+          if (mounted) {
+            context.go('/login'); // Fallback seguro
+          }
         }
       }
     });
@@ -31,22 +46,21 @@ class _SplashPageState extends State<SplashPage>
 
   @override
   void dispose() {
-    _controller.dispose(); // Evita fugas de memoria (Memory Leaks)
+    _controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FCFF), // Tu color de fondo corporativo
+      backgroundColor: const Color(0xFFF9FCFF),
       body: Center(
         child: Lottie.asset(
-          'assets/animations/NARAESV1.json', // COLOCA AQUÍ LA RUTA DE TU LOTTIE
+          'assets/animations/NARAESV1.json',
           controller: _controller,
+          repeat: false,
           onLoaded: (composition) {
-            // Ajusta la duración del controller a la duración real del Lottie
             _controller.duration = composition.duration;
-            // Inicia la animación
             _controller.forward();
           },
         ),
