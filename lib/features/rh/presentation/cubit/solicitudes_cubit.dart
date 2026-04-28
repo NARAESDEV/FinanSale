@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:dio/dio.dart';
 import '../../../../core/network/dio_client.dart';
@@ -33,6 +34,67 @@ class SolicitudesCubit extends Cubit<SolicitudesState> {
       emit(SolicitudesLoaded(lista, resumen: resumen));
     } catch (e) {
       emit(SolicitudesError(ErrorMapper.translate(e)));
+    }
+  }
+
+  Future<void> crearSolicitud({
+    required UserModel user, // <-- OBLIGATORIO para el Basic Auth
+    required String fechaInicio,
+    required String fechaFin,
+    required int idTipoSolicitud,
+    File? archivoAdjunto,
+  }) async {
+    try {
+      emit(SolicitudesLoading());
+
+      // 1. RECONSTRUIMOS EL AUTH
+      final String basicAuth =
+          'Basic ${base64Encode(utf8.encode('${user.correo}:${user.contrasena}'))}';
+
+      final payload = {
+        "fechaInicio": fechaInicio,
+        "fechaFin": fechaFin,
+        "idTipoSolicitud": idTipoSolicitud,
+      };
+
+      // 2. ENVIAMOS EL PAYLOAD JUNTO CON EL HEADER DE SEGURIDAD
+      await _dio.post(
+        '/solicitudes/',
+        data: payload,
+        options: Options(headers: {'Authorization': basicAuth}),
+      );
+
+      // Asegúrate de que este estado exista en tu archivo solicitudes_state.dart
+      emit(SolicitudCreadaExito());
+    } catch (e) {
+      emit(SolicitudesError("Error al crear la solicitud"));
+    }
+  }
+
+  // --- MÉTODO PUT/PATCH: EDITAR SOLICITUD ---
+  Future<void> editarSolicitud({
+    required UserModel user, // <-- OBLIGATORIO para el Basic Auth
+    required int idSolicitudAEditar,
+    required String fechaInicio,
+    required String fechaFin,
+  }) async {
+    try {
+      emit(SolicitudesLoading());
+
+      final String basicAuth =
+          'Basic ${base64Encode(utf8.encode('${user.correo}:${user.contrasena}'))}';
+
+      final payload = {"fechaInicio": fechaInicio, "fechaFin": fechaFin};
+
+      await _dio.put(
+        '/solicitudes/$idSolicitudAEditar',
+        data: payload,
+        options: Options(headers: {'Authorization': basicAuth}),
+      );
+
+      emit(SolicitudEditadaExito());
+    } catch (e) {
+      emit(SolicitudesError("Error al editar la solicitud"));
     }
   }
 }

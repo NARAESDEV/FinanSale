@@ -20,3 +20,13 @@ class SolicitudesLoaded extends SolicitudesState {
   // El valor por defecto asegura que el resto de tu app no explote
   SolicitudesLoaded(this.solicitudes, {this.resumen = const {}});
 }
+
+// ... tus estados anteriores (SolicitudesInitial, SolicitudesLoading, SolicitudesLoaded, etc.)
+
+class SolicitudCreadaExito extends SolicitudesState {
+  // Puedes agregar propiedades aquí en el futuro si necesitas pasar un mensaje
+  // final String mensaje;
+  // SolicitudCreadaExito(this.mensaje);
+}
+
+class SolicitudEditadaExito extends SolicitudesState {}

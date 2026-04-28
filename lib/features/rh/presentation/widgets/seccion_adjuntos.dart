@@ -1,7 +1,17 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 
 class SeccionAdjuntos extends StatelessWidget {
-  const SeccionAdjuntos({super.key});
+  final VoidCallback onTomarFoto;
+  final VoidCallback onAdjuntarArchivo;
+  final File? archivoActual;
+
+  const SeccionAdjuntos({
+    super.key,
+    required this.onTomarFoto,
+    required this.onAdjuntarArchivo,
+    this.archivoActual,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -23,16 +33,50 @@ class SeccionAdjuntos extends StatelessWidget {
             _adjuntoBtn(
               icon: Icons.camera_alt_rounded,
               label: "Tomar Foto",
-              onTap: () => print("Abrir Cámara"),
+              onTap: onTomarFoto,
             ),
             const SizedBox(width: 12),
             _adjuntoBtn(
               icon: Icons.file_present_rounded,
               label: "Adjuntar Archivo",
-              onTap: () => print("Abrir Selector de Archivos"),
+              onTap: onAdjuntarArchivo,
             ),
           ],
         ),
+        // Si hay un archivo seleccionado, mostramos una pequeña alerta de éxito
+        if (archivoActual != null) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF0FDF4), // Fondo verde claro
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFBBF7D0)),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.check_circle_rounded,
+                  color: Color(0xFF22C55E),
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    "Archivo cargado: ${archivoActual!.path.split('/').last}",
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF166534),
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ],
     );
   }

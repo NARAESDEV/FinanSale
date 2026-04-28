@@ -7,6 +7,7 @@ import 'package:finansale/features/rh/domain/repositories/rh_repository_impl.dar
 import 'package:finansale/features/rh/presentation/cubit/aprobaciones_cubit.dart';
 import 'package:finansale/features/rh/presentation/cubit/solicitudes_cubit.dart';
 import 'package:finansale/features/rh/presentation/cubit/subtipos/subtipos_cubit.dart';
+import 'package:finansale/features/rh/presentation/cubit/tipos/tipos_cubit.dart';
 import 'package:finansale/features/rh/presentation/pages/historial_page.dart';
 import 'package:finansale/features/rh/presentation/pages/aprobaciones_pendientes_page.dart';
 import 'package:finansale/features/rh/presentation/pages/estado_solicitudes_page.dart';
@@ -82,22 +83,31 @@ class AppRouter {
           GoRoute(
             path: '/solicitudes',
             pageBuilder: (context, state) => NoTransitionPage(
-              child: BlocProvider<SubtiposCubit>(
-                create: (context) {
-                  // 1. Extraemos el estado de Autenticación
-                  final authState = context.read<AuthCubit>().state;
-
-                  final cubit = SubtiposCubit(
-                    RhRepositoryImpl(RhRemoteDataSource()),
-                  );
-
-                  // 2. Si el usuario está logueado, le pasamos sus datos a la petición
-                  if (authState is AuthAuthenticated) {
-                    cubit.fetchSubtipos(authState.user);
-                  }
-
-                  return cubit;
-                },
+              child: MultiBlocProvider(
+                providers: [
+                  // 1. Cubit para Enviar el Formulario (Evita tu error rojo)
+                  BlocProvider<SolicitudesCubit>(
+                    create: (context) => SolicitudesCubit(),
+                  ),
+                  // 2. Cubit para traer los Tipos (Lo disparamos al abrir la pantalla)
+                  BlocProvider<TiposCubit>(
+                    create: (context) {
+                      final authState = context.read<AuthCubit>().state;
+                      final cubit = TiposCubit(
+                        RhRepositoryImpl(RhRemoteDataSource()),
+                      );
+                      if (authState is AuthAuthenticated) {
+                        cubit.fetchTipos(authState.user);
+                      }
+                      return cubit;
+                    },
+                  ),
+                  // 3. Cubit de Subtipos (Nace pausado, se dispara al elegir el Tipo)
+                  BlocProvider<SubtiposCubit>(
+                    create: (context) =>
+                        SubtiposCubit(RhRepositoryImpl(RhRemoteDataSource())),
+                  ),
+                ],
                 child: const NuevaSolicitudPage(),
               ),
             ),

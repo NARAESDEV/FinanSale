@@ -1,7 +1,14 @@
-import '../../data/models/subtipo_solicitud_model.dart';
 import '../../../auth/data/models/user_model.dart';
+import '../../data/models/subtipo_solicitud_model.dart';
+import '../../data/models/tipo_solicitud_model.dart';
 
 abstract class RhRepository {
-  /// Obtiene la lista de subtipos de solicitud desde el backend
-  Future<List<SubtipoSolicitudModel>> getSubtiposSolicitud(UserModel user);
+  // 1. Obtener Tipos (Vacaciones, Permisos, etc)
+  Future<List<TipoSolicitudModel>> getTiposSolicitud(UserModel user);
+
+  // 2. Obtener Subtipos dependiendo del ID
+  Future<List<SubtipoSolicitudModel>> getSubtiposPorTipo(
+    UserModel user,
+    int idTipoSolicitud,
+  );
 }

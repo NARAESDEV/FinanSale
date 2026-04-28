@@ -1,11 +1,17 @@
 import 'package:finansale/features/rh/data/models/subtipo_solicitud_model.dart';
+import 'package:finansale/features/rh/data/models/tipo_solicitud_model.dart';
 import 'package:finansale/features/rh/presentation/cubit/subtipos/subtipos_cubit.dart';
+import 'package:finansale/features/rh/presentation/cubit/tipos/tipos_cubit.dart';
 import 'package:finansale/features/rh/presentation/widgets/selector_subtipos_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart'; // Importante para el formato YYYY-MM-DD
+import 'package:intl/intl.dart';
+
+import '../../../auth/presentation/cubit/auth_cubit.dart';
+import '../../../auth/presentation/cubit/auth_state.dart';
+
+import '../cubit/solicitudes_cubit.dart';
 import '../widgets/info_card_solicitud.dart';
-import '../widgets/seccion_adjuntos.dart';
 
 class NuevaSolicitudPage extends StatefulWidget {
   const NuevaSolicitudPage({super.key});
@@ -15,24 +21,22 @@ class NuevaSolicitudPage extends StatefulWidget {
 }
 
 class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
+  // Variables de seleccion
+  TipoSolicitudModel? _tipoSeleccionado;
   SubtipoSolicitudModel? _subtipoSeleccionado;
 
-  // Variables de Estado para el Calendario
+  // Variables de fechas
   DateTime? _fechaInicio;
   DateTime? _fechaFin;
 
-  // ----------------------------------------------------------------
-  // LÓGICA DE NEGOCIO: CÁLCULO DE DÍAS HÁBILES (Sin fines de semana)
-  // ----------------------------------------------------------------
+  // Calculo de dias sin contar fines de semana
   DateTime _calcularDiasHabiles(DateTime inicio, int diasASumar) {
     DateTime fechaResultante = inicio;
     int diasAgregados = 0;
-    // Empezamos asumiendo que el primer día seleccionado ya cuenta como 1, por lo que sumamos diasASumar - 1
     int diasRestantes = diasASumar > 0 ? diasASumar - 1 : 0;
 
     while (diasAgregados < diasRestantes) {
       fechaResultante = fechaResultante.add(const Duration(days: 1));
-      // Si NO es sábado ni domingo, contamos el día
       if (fechaResultante.weekday != DateTime.saturday &&
           fechaResultante.weekday != DateTime.sunday) {
         diasAgregados++;
@@ -41,22 +45,28 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
     return fechaResultante;
   }
 
-  // ----------------------------------------------------------------
-  // GESTIÓN DEL CALENDARIO SEGÚN EL TRÁMITE
-  // ----------------------------------------------------------------
+  // Logica dinamica del calendario
   Future<void> _seleccionarFechas() async {
-    if (_subtipoSeleccionado == null) return;
+    if (_tipoSeleccionado == null) return;
 
-    final int idTramite = _subtipoSeleccionado!.idSubtipoSolicitud;
+    // Regla de ejemplo para Cumpleanos asumiendo un ID especifico en Subtipo
+    final bool esCumpleanos =
+        _subtipoSeleccionado?.subtipoSolicitu.toLowerCase().contains(
+          "cumpleaños",
+        ) ??
+        false;
+    final bool esPaternidad =
+        _subtipoSeleccionado?.subtipoSolicitu.toLowerCase().contains(
+          "paternidad",
+        ) ??
+        false;
 
-    // 1. REGLA: CUMPLEAÑOS (ID 3) -> Solo 1 día exacto
-    if (idTramite == 3) {
+    if (esCumpleanos) {
       final selected = await showDatePicker(
         context: context,
         initialDate: DateTime.now(),
         firstDate: DateTime.now(),
         lastDate: DateTime.now().add(const Duration(days: 365)),
-        helpText: "Selecciona el día de Cumpleaños",
       );
       if (selected != null) {
         setState(() {
@@ -67,34 +77,27 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
       return;
     }
 
-    // 2. REGLA: PATERNIDAD/MATERNIDAD (ID 1) -> 5 días por defecto saltando fines de semana
-    if (idTramite == 1) {
+    if (esPaternidad) {
       final selected = await showDatePicker(
         context: context,
         initialDate: DateTime.now(),
         firstDate: DateTime.now(),
         lastDate: DateTime.now().add(const Duration(days: 365)),
-        helpText: "Selecciona el inicio de Paternidad/Maternidad",
       );
       if (selected != null) {
         setState(() {
           _fechaInicio = selected;
-          // NOTA: Como Paternidad y Maternidad comparten ID 1, aplicamos 5 días (Paternidad).
-          // Si necesitas 84 días para Maternidad, tendremos que agregar un Switch o Dialog extra aquí.
           _fechaFin = _calcularDiasHabiles(selected, 5);
         });
       }
       return;
     }
 
-    // 3. REGLA: ENFERMEDAD (ID 2) O VACACIONES -> Rango de fechas libre
+    // Rango libre por defecto
     final pickedRange = await showDateRangePicker(
       context: context,
-      firstDate: DateTime.now().subtract(
-        const Duration(days: 30),
-      ), // Permite retroactivo
+      firstDate: DateTime.now().subtract(const Duration(days: 30)),
       lastDate: DateTime.now().add(const Duration(days: 365)),
-      helpText: "Selecciona el periodo",
     );
     if (pickedRange != null) {
       setState(() {
@@ -104,16 +107,14 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
     }
   }
 
-  // ----------------------------------------------------------------
-  // JSON BUILDER: PREPARACIÓN DEL PAYLOAD
-  // ----------------------------------------------------------------
+  // Consumo del Cubit para armar y enviar el JSON
   void _prepararPayload() {
     if (_fechaInicio == null ||
         _fechaFin == null ||
-        _subtipoSeleccionado == null) {
+        _tipoSeleccionado == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("Por favor, completa todos los campos del trámite."),
+          content: Text("Completa todos los campos obligatorios"),
           backgroundColor: Colors.red,
         ),
       );
@@ -121,20 +122,103 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
     }
 
     final format = DateFormat('yyyy-MM-dd');
-    final payload = {
-      "fechaInicio": format.format(_fechaInicio!),
-      "fechaFin": format.format(_fechaFin!),
-      "idTipoSolicitud": _subtipoSeleccionado!.idTipoSolicitud,
-    };
+    final authState = context.read<AuthCubit>().state;
 
-    // Esto te imprimirá el JSON exacto en la consola para confirmar que funciona
-    print("🚀 PAYLOAD LISTO PARA ENVIAR: $payload");
-
-    // El siguiente paso será enviar este payload a un nuevo Cubit (Ej. CrearSolicitudCubit)
+    if (authState is AuthAuthenticated) {
+      // Disparamos el metodo POST que creaste en el SolicitudesCubit
+      context.read<SolicitudesCubit>().crearSolicitud(
+        user: authState.user,
+        fechaInicio: format.format(_fechaInicio!),
+        fechaFin: format.format(_fechaFin!),
+        // OJO El backend pide idTipoSolicitud en el payload de crear, no el subtipo
+        idTipoSolicitud: _tipoSeleccionado!.idTipoSolicitud,
+      );
+    }
   }
 
-  void _abrirSelector() async {
+  // Simula la apertura de tu BottomSheet o Dialog para seleccionar Tipos
+  void _abrirSelectorTipos() async {
+    final tiposCubit = context.read<TiposCubit>();
+    // Mostramos un BottomSheet nativo con la lista de Tipos
+    final resultado = await showModalBottomSheet<TipoSolicitudModel>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (bottomSheetContext) {
+        return BlocBuilder<TiposCubit, TiposState>(
+          bloc: tiposCubit, // Conectamos el Cubit existente
+          builder: (context, state) {
+            if (state is TiposLoading) {
+              return const SizedBox(
+                height: 200,
+                child: Center(
+                  child: CircularProgressIndicator(color: Color(0xFF3E77BC)),
+                ),
+              );
+            }
+            if (state is TiposError) {
+              return SizedBox(
+                height: 200,
+                child: Center(
+                  child: Text(
+                    state.message,
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                ),
+              );
+            }
+            if (state is TiposLoaded) {
+              return ListView.builder(
+                shrinkWrap: true,
+                itemCount: state.tipos.length,
+                itemBuilder: (context, index) {
+                  final tipo = state.tipos[index];
+                  return ListTile(
+                    leading: const Icon(Icons.folder, color: Color(0xFF3E77BC)),
+                    title: Text(
+                      tipo.tipoSolicitud,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    onTap: () =>
+                        Navigator.pop(context, tipo), // Devolvemos la seleccion
+                  );
+                },
+              );
+            }
+            return const SizedBox();
+          },
+        );
+      },
+    );
+
+    // LOGICA DE CASCADA: Si seleccionó un Tipo, limpiamos abajo y disparamos la petición
+    if (resultado != null) {
+      setState(() {
+        _tipoSeleccionado = resultado;
+        _subtipoSeleccionado = null; // Reseteamos la cascada
+        _fechaInicio = null;
+        _fechaFin = null;
+      });
+
+      // ¡AQUÍ SE DISPARA LA PETICIÓN HACIA /subtipo_solicitud/ID!
+      final authState = context.read<AuthCubit>().state;
+      if (authState is AuthAuthenticated) {
+        context.read<SubtiposCubit>().fetchSubtipos(
+          authState.user,
+          resultado.idTipoSolicitud,
+        );
+      }
+    }
+  }
+
+  // Simula la apertura de tu BottomSheet para seleccionar Subtipos
+  void _abrirSelectorSubtipos() async {
+    if (_tipoSeleccionado == null) return;
+
     final subtiposCubit = context.read<SubtiposCubit>();
+
+    // Aquí reutilizamos tu widget SelectorSubtiposBottomSheet que ya tiene el buscador
     final resultado = await showModalBottomSheet<SubtipoSolicitudModel>(
       context: context,
       isScrollControlled: true,
@@ -148,17 +232,12 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
     if (resultado != null) {
       setState(() {
         _subtipoSeleccionado = resultado;
-        // Limpiamos fechas si cambian de trámite
-        _fechaInicio = null;
-        _fechaFin = null;
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Variable de control para ocultar sección de adjuntos
-    final bool esCumpleanos = _subtipoSeleccionado?.idSubtipoSolicitud == 3;
     final formatStr = DateFormat('dd MMM yyyy');
 
     return Scaffold(
@@ -177,17 +256,11 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
                   color: Color(0xFF1E293B),
                 ),
               ),
-              const SizedBox(height: 4),
-              const Text(
-                "Completa los campos para procesar tu trámite.",
-                style: TextStyle(fontSize: 16, color: Color(0xFF64748B)),
-              ),
               const SizedBox(height: 32),
 
-              _label("¿QUÉ NECESITAS TRAMITAR?"),
-
+              _label("TIPO DE TRÁMITE"),
               InkWell(
-                onTap: _abrirSelector,
+                onTap: _abrirSelectorTipos,
                 borderRadius: BorderRadius.circular(16),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
@@ -204,12 +277,70 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.edit_document, color: Color(0xFF3E77BC)),
+                      const Icon(
+                        Icons.folder_open_rounded,
+                        color: Color(0xFF3E77BC),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          _tipoSeleccionado?.tipoSolicitud ??
+                              "Seleccionar tipo...",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: _tipoSeleccionado != null
+                                ? const Color(0xFF1E293B)
+                                : const Color(0xFF94A3B8),
+                          ),
+                        ),
+                      ),
+                      const Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: Color(0xFF64748B),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              _label("SUBTIPO DE TRÁMITE"),
+              InkWell(
+                // Solo se habilita si ya hay un tipo seleccionado
+                onTap: _tipoSeleccionado == null
+                    ? null
+                    : _abrirSelectorSubtipos,
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _tipoSeleccionado == null
+                        ? const Color(0xFFF1F5F9)
+                        : Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: const Color(0xFFE2E8F0),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.edit_document,
+                        color: _tipoSeleccionado == null
+                            ? const Color(0xFF94A3B8)
+                            : const Color(0xFF3E77BC),
+                      ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           _subtipoSeleccionado?.subtipoSolicitu ??
-                              "Seleccionar trámite...",
+                              "Seleccionar especificacion...",
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -217,8 +348,6 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
                                 ? const Color(0xFF1E293B)
                                 : const Color(0xFF94A3B8),
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       const Icon(
@@ -234,8 +363,8 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
 
               if (_subtipoSeleccionado != null)
                 InfoCardSolicitud(
-                  label: "Trámite de ${_subtipoSeleccionado!.subtipoSolicitu}",
-                  // Calcula los días seleccionados dinámicamente para mostrarlos en la UI
+                  label:
+                      "Especificación: ${_subtipoSeleccionado!.subtipoSolicitu}",
                   value: _fechaInicio != null && _fechaFin != null
                       ? (_fechaFin!.difference(_fechaInicio!).inDays + 1)
                             .toString()
@@ -244,29 +373,11 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
                   icon: Icons.assignment_rounded,
                 ),
 
-              if (_subtipoSeleccionado == null)
-                const Center(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 20),
-                    child: Text(
-                      "Selecciona un trámite para ver los detalles.",
-                      style: TextStyle(color: Color(0xFF94A3B8)),
-                    ),
-                  ),
-                ),
-
-              const SizedBox(height: 24),
-
-              _label("SOLICITANTE"),
-              _textFieldReadOnly("Josue Israel"),
-
               const SizedBox(height: 24),
 
               _label("SELECCIONA EL PERIODO:"),
-
-              // BOTÓN DEL CALENDARIO INTERACTIVO
               InkWell(
-                onTap: _subtipoSeleccionado == null ? null : _seleccionarFechas,
+                onTap: _tipoSeleccionado == null ? null : _seleccionarFechas,
                 borderRadius: BorderRadius.circular(16),
                 child: Container(
                   width: double.infinity,
@@ -304,15 +415,29 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
                 ),
               ),
 
-              const SizedBox(height: 32),
+              const SizedBox(height: 40),
 
-              // RENDERIZADO CONDICIONAL DE LOS ADJUNTOS
-              if (!esCumpleanos && _subtipoSeleccionado != null) ...[
-                const SeccionAdjuntos(),
-                const SizedBox(height: 40),
-              ],
-
-              _botonEnviar(),
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: _prepararPayload,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF3E77BC),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: const Text(
+                    "Enviar Solicitud",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -320,63 +445,16 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
     );
   }
 
-  Widget _label(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w800,
-          color: Color(0xFF64748B),
-          letterSpacing: 0.5,
-        ),
+  Widget _label(String text) => Padding(
+    padding: const EdgeInsets.only(bottom: 12),
+    child: Text(
+      text,
+      style: const TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w800,
+        color: Color(0xFF64748B),
+        letterSpacing: 0.5,
       ),
-    );
-  }
-
-  Widget _textFieldReadOnly(String text) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF1F5F9),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontSize: 16,
-          color: Color(0xFF475569),
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-    );
-  }
-
-  Widget _botonEnviar() {
-    return SizedBox(
-      width: double.infinity,
-      height: 56,
-      child: ElevatedButton(
-        onPressed: _prepararPayload,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF3E77BC),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          elevation: 0,
-        ),
-        child: const Text(
-          "Enviar Solicitud",
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    );
-  }
+    ),
+  );
 }
