@@ -1,17 +1,17 @@
 import 'package:finansale/features/rh/data/models/subtipo_solicitud_model.dart';
 import 'package:finansale/features/rh/data/models/tipo_solicitud_model.dart';
-import 'package:finansale/features/rh/presentation/cubit/subtipos/subtipos_cubit.dart';
-import 'package:finansale/features/rh/presentation/cubit/tipos/tipos_cubit.dart';
-import 'package:finansale/features/rh/presentation/widgets/selector_subtipos_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../auth/presentation/cubit/auth_state.dart';
-
 import '../cubit/solicitudes_cubit.dart';
+import '../cubit/solicitudes_state.dart';
+import '../cubit/subtipos/subtipos_cubit.dart';
+import '../cubit/tipos/tipos_cubit.dart';
 import '../widgets/info_card_solicitud.dart';
+import '../widgets/selector_subtipos_bottom_sheet.dart';
 
 class NuevaSolicitudPage extends StatefulWidget {
   const NuevaSolicitudPage({super.key});
@@ -21,15 +21,16 @@ class NuevaSolicitudPage extends StatefulWidget {
 }
 
 class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
-  // Variables de seleccion
+  // --- VARIABLES DE ESTADO ---
   TipoSolicitudModel? _tipoSeleccionado;
   SubtipoSolicitudModel? _subtipoSeleccionado;
-
-  // Variables de fechas
   DateTime? _fechaInicio;
   DateTime? _fechaFin;
 
-  // Calculo de dias sin contar fines de semana
+  // ¡AQUÍ ESTÁ LA VARIABLE FALTANTE!
+  bool _isProcessing = false;
+
+  // --- LÓGICA DE FECHAS ---
   DateTime _calcularDiasHabiles(DateTime inicio, int diasASumar) {
     DateTime fechaResultante = inicio;
     int diasAgregados = 0;
@@ -45,11 +46,9 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
     return fechaResultante;
   }
 
-  // Logica dinamica del calendario
   Future<void> _seleccionarFechas() async {
     if (_tipoSeleccionado == null) return;
 
-    // Regla de ejemplo para Cumpleanos asumiendo un ID especifico en Subtipo
     final bool esCumpleanos =
         _subtipoSeleccionado?.subtipoSolicitu.toLowerCase().contains(
           "cumpleaños",
@@ -93,7 +92,6 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
       return;
     }
 
-    // Rango libre por defecto
     final pickedRange = await showDateRangePicker(
       context: context,
       firstDate: DateTime.now().subtract(const Duration(days: 30)),
@@ -107,7 +105,7 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
     }
   }
 
-  // Consumo del Cubit para armar y enviar el JSON
+  // --- DISPARADOR DEL POST (GUARDAR) ---
   void _prepararPayload() {
     if (_fechaInicio == null ||
         _fechaFin == null ||
@@ -125,21 +123,19 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
     final authState = context.read<AuthCubit>().state;
 
     if (authState is AuthAuthenticated) {
-      // Disparamos el metodo POST que creaste en el SolicitudesCubit
       context.read<SolicitudesCubit>().crearSolicitud(
         user: authState.user,
         fechaInicio: format.format(_fechaInicio!),
         fechaFin: format.format(_fechaFin!),
-        // OJO El backend pide idTipoSolicitud en el payload de crear, no el subtipo
         idTipoSolicitud: _tipoSeleccionado!.idTipoSolicitud,
       );
     }
   }
 
-  // Simula la apertura de tu BottomSheet o Dialog para seleccionar Tipos
+  // --- SELECTORES (BOTTOM SHEETS) ---
   void _abrirSelectorTipos() async {
     final tiposCubit = context.read<TiposCubit>();
-    // Mostramos un BottomSheet nativo con la lista de Tipos
+
     final resultado = await showModalBottomSheet<TipoSolicitudModel>(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -147,7 +143,7 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
       ),
       builder: (bottomSheetContext) {
         return BlocBuilder<TiposCubit, TiposState>(
-          bloc: tiposCubit, // Conectamos el Cubit existente
+          bloc: tiposCubit,
           builder: (context, state) {
             if (state is TiposLoading) {
               return const SizedBox(
@@ -180,8 +176,7 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
                       tipo.tipoSolicitud,
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
-                    onTap: () =>
-                        Navigator.pop(context, tipo), // Devolvemos la seleccion
+                    onTap: () => Navigator.pop(context, tipo),
                   );
                 },
               );
@@ -192,16 +187,14 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
       },
     );
 
-    // LOGICA DE CASCADA: Si seleccionó un Tipo, limpiamos abajo y disparamos la petición
     if (resultado != null) {
       setState(() {
         _tipoSeleccionado = resultado;
-        _subtipoSeleccionado = null; // Reseteamos la cascada
+        _subtipoSeleccionado = null;
         _fechaInicio = null;
         _fechaFin = null;
       });
 
-      // ¡AQUÍ SE DISPARA LA PETICIÓN HACIA /subtipo_solicitud/ID!
       final authState = context.read<AuthCubit>().state;
       if (authState is AuthAuthenticated) {
         context.read<SubtiposCubit>().fetchSubtipos(
@@ -212,13 +205,11 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
     }
   }
 
-  // Simula la apertura de tu BottomSheet para seleccionar Subtipos
   void _abrirSelectorSubtipos() async {
     if (_tipoSeleccionado == null) return;
 
     final subtiposCubit = context.read<SubtiposCubit>();
 
-    // Aquí reutilizamos tu widget SelectorSubtiposBottomSheet que ya tiene el buscador
     final resultado = await showModalBottomSheet<SubtipoSolicitudModel>(
       context: context,
       isScrollControlled: true,
@@ -236,210 +227,340 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
     }
   }
 
+  // --- MODAL DE ÉXITO DINÁMICA ---
+  void _mostrarModalExito() {
+    final nombreTramite = _tipoSeleccionado?.tipoSolicitud ?? "trámite";
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          backgroundColor: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.check_circle_rounded,
+                  color: Color(0xFF22C55E),
+                  size: 64,
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  "¡Éxito!",
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFF1E293B),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  "Registro de $nombreTramite exitoso.",
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: Color(0xFF64748B),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 32),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF3E77BC),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      elevation: 0,
+                    ),
+                    onPressed: () {
+                      // 1. Cerramos el diálogo primero
+                      Navigator.of(dialogContext).pop();
+
+                      // 2. Redirigimos al Dashboard usando la ruta de GoRouter
+                      // Esto limpia el stack y evita la pantalla negra.
+                      // context.go('/rh-dashboard');
+                    },
+                    child: const Text(
+                      "Aceptar",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // --- UI PRINCIPAL ---
   @override
   Widget build(BuildContext context) {
     final formatStr = DateFormat('dd MMM yyyy');
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                "Nueva Solicitud",
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.w900,
-                  color: Color(0xFF1E293B),
-                ),
-              ),
-              const SizedBox(height: 32),
+      // BLOC LISTENER PARA ESCUCHAR AL BACKEND
+      body: BlocListener<SolicitudesCubit, SolicitudesState>(
+        listener: (context, state) {
+          if (state is SolicitudesLoading) {
+            setState(() => _isProcessing = true);
+          } else {
+            setState(() => _isProcessing = false);
+          }
 
-              _label("TIPO DE TRÁMITE"),
-              InkWell(
-                onTap: _abrirSelectorTipos,
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 16,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: const Color(0xFFE2E8F0),
-                      width: 1.5,
+          if (state is SolicitudCreadaExito) {
+            _mostrarModalExito();
+          } else if (state is SolicitudesError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.redAccent,
+              ),
+            );
+          }
+        },
+        child: Stack(
+          children: [
+            SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Nueva Solicitud",
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFF1E293B),
+                      ),
                     ),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.folder_open_rounded,
-                        color: Color(0xFF3E77BC),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          _tipoSeleccionado?.tipoSolicitud ??
-                              "Seleccionar tipo...",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: _tipoSeleccionado != null
-                                ? const Color(0xFF1E293B)
-                                : const Color(0xFF94A3B8),
-                          ),
-                        ),
-                      ),
-                      const Icon(
-                        Icons.keyboard_arrow_down_rounded,
-                        color: Color(0xFF64748B),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+                    const SizedBox(height: 32),
 
-              const SizedBox(height: 24),
-
-              _label("SUBTIPO DE TRÁMITE"),
-              InkWell(
-                // Solo se habilita si ya hay un tipo seleccionado
-                onTap: _tipoSeleccionado == null
-                    ? null
-                    : _abrirSelectorSubtipos,
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 16,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _tipoSeleccionado == null
-                        ? const Color(0xFFF1F5F9)
-                        : Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: const Color(0xFFE2E8F0),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.edit_document,
-                        color: _tipoSeleccionado == null
-                            ? const Color(0xFF94A3B8)
-                            : const Color(0xFF3E77BC),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          _subtipoSeleccionado?.subtipoSolicitu ??
-                              "Seleccionar especificacion...",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: _subtipoSeleccionado != null
-                                ? const Color(0xFF1E293B)
-                                : const Color(0xFF94A3B8),
-                          ),
-                        ),
-                      ),
-                      const Icon(
-                        Icons.keyboard_arrow_down_rounded,
-                        color: Color(0xFF64748B),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              if (_subtipoSeleccionado != null)
-                InfoCardSolicitud(
-                  label:
-                      "Especificación: ${_subtipoSeleccionado!.subtipoSolicitu}",
-                  value: _fechaInicio != null && _fechaFin != null
-                      ? (_fechaFin!.difference(_fechaInicio!).inDays + 1)
-                            .toString()
-                      : "-",
-                  unit: "Días",
-                  icon: Icons.assignment_rounded,
-                ),
-
-              const SizedBox(height: 24),
-
-              _label("SELECCIONA EL PERIODO:"),
-              InkWell(
-                onTap: _tipoSeleccionado == null ? null : _seleccionarFechas,
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: const Color(0xFFF1F5F9),
-                      width: 2,
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      const Icon(
-                        Icons.calendar_month_rounded,
-                        color: Color(0xFF3E77BC),
-                        size: 40,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        _fechaInicio == null
-                            ? "Toca para abrir calendario"
-                            : "${formatStr.format(_fechaInicio!)}  al  ${formatStr.format(_fechaFin!)}",
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: _fechaInicio == null
-                              ? const Color(0xFF94A3B8)
-                              : const Color(0xFF1E293B),
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 40),
-
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: _prepararPayload,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF3E77BC),
-                    shape: RoundedRectangleBorder(
+                    _label("TIPO DE TRÁMITE"),
+                    InkWell(
+                      onTap: _abrirSelectorTipos,
                       borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: const Color(0xFFE2E8F0),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.folder_open_rounded,
+                              color: Color(0xFF3E77BC),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                _tipoSeleccionado?.tipoSolicitud ??
+                                    "Seleccionar tipo...",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: _tipoSeleccionado != null
+                                      ? const Color(0xFF1E293B)
+                                      : const Color(0xFF94A3B8),
+                                ),
+                              ),
+                            ),
+                            const Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              color: Color(0xFF64748B),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                  child: const Text(
-                    "Enviar Solicitud",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+
+                    const SizedBox(height: 24),
+
+                    _label("SUBTIPO DE TRÁMITE"),
+                    InkWell(
+                      onTap: _tipoSeleccionado == null
+                          ? null
+                          : _abrirSelectorSubtipos,
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _tipoSeleccionado == null
+                              ? const Color(0xFFF1F5F9)
+                              : Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: const Color(0xFFE2E8F0),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.edit_document,
+                              color: _tipoSeleccionado == null
+                                  ? const Color(0xFF94A3B8)
+                                  : const Color(0xFF3E77BC),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                _subtipoSeleccionado?.subtipoSolicitu ??
+                                    "Seleccionar especificacion...",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: _subtipoSeleccionado != null
+                                      ? const Color(0xFF1E293B)
+                                      : const Color(0xFF94A3B8),
+                                ),
+                              ),
+                            ),
+                            const Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              color: Color(0xFF64748B),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
+
+                    const SizedBox(height: 24),
+
+                    if (_subtipoSeleccionado != null)
+                      InfoCardSolicitud(
+                        label:
+                            "Especificación: ${_subtipoSeleccionado!.subtipoSolicitu}",
+                        value: _fechaInicio != null && _fechaFin != null
+                            ? (_fechaFin!.difference(_fechaInicio!).inDays + 1)
+                                  .toString()
+                            : "-",
+                        unit: "Días",
+                        icon: Icons.assignment_rounded,
+                      ),
+
+                    const SizedBox(height: 24),
+
+                    _label("SELECCIONA EL PERIODO:"),
+                    InkWell(
+                      onTap: _tipoSeleccionado == null
+                          ? null
+                          : _seleccionarFechas,
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: const Color(0xFFF1F5F9),
+                            width: 2,
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            const Icon(
+                              Icons.calendar_month_rounded,
+                              color: Color(0xFF3E77BC),
+                              size: 40,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              _fechaInicio == null
+                                  ? "Toca para abrir calendario"
+                                  : "${formatStr.format(_fechaInicio!)}  al  ${formatStr.format(_fechaFin!)}",
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: _fechaInicio == null
+                                    ? const Color(0xFF94A3B8)
+                                    : const Color(0xFF1E293B),
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 40),
+
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: _prepararPayload,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF3E77BC),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: const Text(
+                          "Enviar Solicitud",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // --- PANTALLA DE CARGA (OVERLAY) ---
+            if (_isProcessing)
+              Container(
+                color: Colors.black45,
+                child: const Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircularProgressIndicator(color: Colors.white),
+                      SizedBox(height: 16),
+                      Text(
+                        "Guardando...",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-            ],
-          ),
+          ],
         ),
       ),
     );
