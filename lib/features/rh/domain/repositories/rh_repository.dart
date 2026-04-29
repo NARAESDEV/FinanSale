@@ -1,3 +1,5 @@
+import 'package:finansale/features/rh/data/models/usuario_sustitucion_model.dart';
+
 import '../../../auth/data/models/user_model.dart';
 import '../../data/models/subtipo_solicitud_model.dart';
 import '../../data/models/tipo_solicitud_model.dart';
@@ -11,4 +13,5 @@ abstract class RhRepository {
     UserModel user,
     int idTipoSolicitud,
   );
+  Future<List<UsuarioSustitucionModel>> getUsuariosSustitucion(UserModel user);
 }

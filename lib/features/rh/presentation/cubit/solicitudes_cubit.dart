@@ -38,11 +38,12 @@ class SolicitudesCubit extends Cubit<SolicitudesState> {
   }
 
   Future<void> crearSolicitud({
-    required UserModel user, // <-- OBLIGATORIO para el Basic Auth
+    required UserModel user,
     required String fechaInicio,
     required String fechaFin,
     required int idTipoSolicitud,
     File? archivoAdjunto,
+    String? idUsuarioSustituto,
   }) async {
     try {
       emit(SolicitudesLoading());
@@ -55,6 +56,7 @@ class SolicitudesCubit extends Cubit<SolicitudesState> {
         "fechaInicio": fechaInicio,
         "fechaFin": fechaFin,
         "idTipoSolicitud": idTipoSolicitud,
+        "idUsuarioSustituto": idUsuarioSustituto,
       };
 
       // 2. ENVIAMOS EL PAYLOAD JUNTO CON EL HEADER DE SEGURIDAD
@@ -73,7 +75,7 @@ class SolicitudesCubit extends Cubit<SolicitudesState> {
 
   // --- MÉTODO PUT/PATCH: EDITAR SOLICITUD ---
   Future<void> editarSolicitud({
-    required UserModel user, // <-- OBLIGATORIO para el Basic Auth
+    required UserModel user,
     required int idSolicitudAEditar,
     required String fechaInicio,
     required String fechaFin,

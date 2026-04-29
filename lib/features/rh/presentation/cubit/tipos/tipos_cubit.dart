@@ -20,7 +20,6 @@ class TiposError extends TiposState {
   TiposError(this.message);
 }
 
-// --- CUBIT ---
 class TiposCubit extends Cubit<TiposState> {
   final RhRepository _repository;
 

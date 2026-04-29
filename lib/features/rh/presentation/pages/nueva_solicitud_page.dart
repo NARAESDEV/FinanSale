@@ -1,5 +1,8 @@
 import 'package:finansale/features/rh/data/models/subtipo_solicitud_model.dart';
 import 'package:finansale/features/rh/data/models/tipo_solicitud_model.dart';
+import 'package:finansale/features/rh/data/models/usuario_sustitucion_model.dart';
+import 'package:finansale/features/rh/presentation/cubit/usuarios_sustitucion/usuarios_sustitucion_cubit.dart';
+import 'package:finansale/features/rh/presentation/widgets/selector_generico_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -9,9 +12,9 @@ import '../../../auth/presentation/cubit/auth_state.dart';
 import '../cubit/solicitudes_cubit.dart';
 import '../cubit/solicitudes_state.dart';
 import '../cubit/subtipos/subtipos_cubit.dart';
+import '../cubit/subtipos/subtipos_state.dart';
 import '../cubit/tipos/tipos_cubit.dart';
 import '../widgets/info_card_solicitud.dart';
-import '../widgets/selector_subtipos_bottom_sheet.dart';
 
 class NuevaSolicitudPage extends StatefulWidget {
   const NuevaSolicitudPage({super.key});
@@ -26,8 +29,8 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
   SubtipoSolicitudModel? _subtipoSeleccionado;
   DateTime? _fechaInicio;
   DateTime? _fechaFin;
+  UsuarioSustitucionModel? _responsableSeleccionado;
 
-  // ¡AQUÍ ESTÁ LA VARIABLE FALTANTE!
   bool _isProcessing = false;
 
   // --- LÓGICA DE FECHAS ---
@@ -107,6 +110,7 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
 
   // --- DISPARADOR DEL POST (GUARDAR) ---
   void _prepararPayload() {
+    // Agregamos validación opcional u obligatoria para responsable (ajusta según tu negocio)
     if (_fechaInicio == null ||
         _fechaFin == null ||
         _tipoSeleccionado == null) {
@@ -123,65 +127,41 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
     final authState = context.read<AuthCubit>().state;
 
     if (authState is AuthAuthenticated) {
+      // 🚨 IMPORTANTE: Asegúrate de que en tu SolicitudesCubit.crearSolicitud
+      // hayas agregado el parámetro idUsuarioResponsable para que lo envíe a Flask.
       context.read<SolicitudesCubit>().crearSolicitud(
         user: authState.user,
         fechaInicio: format.format(_fechaInicio!),
         fechaFin: format.format(_fechaFin!),
         idTipoSolicitud: _tipoSeleccionado!.idTipoSolicitud,
+        idUsuarioSustituto: _responsableSeleccionado?.idUsuario,
+        // idUsuarioResponsable: _responsableSeleccionado?.idUsuario, <-- DESCOMENTA CUANDO ACTUALICES EL CUBIT
       );
     }
   }
 
-  // --- SELECTORES (BOTTOM SHEETS) ---
+  // --- SELECTORES (CON BUSCADOR UNIFICADO) ---
   void _abrirSelectorTipos() async {
     final tiposCubit = context.read<TiposCubit>();
-
+    if (tiposCubit.state is! TiposLoaded) return;
     final resultado = await showModalBottomSheet<TipoSolicitudModel>(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (bottomSheetContext) {
         return BlocBuilder<TiposCubit, TiposState>(
           bloc: tiposCubit,
           builder: (context, state) {
-            if (state is TiposLoading) {
-              return const SizedBox(
-                height: 200,
-                child: Center(
-                  child: CircularProgressIndicator(color: Color(0xFF3E77BC)),
-                ),
-              );
-            }
-            if (state is TiposError) {
-              return SizedBox(
-                height: 200,
-                child: Center(
-                  child: Text(
-                    state.message,
-                    style: const TextStyle(color: Colors.red),
-                  ),
-                ),
-              );
-            }
             if (state is TiposLoaded) {
-              return ListView.builder(
-                shrinkWrap: true,
-                itemCount: state.tipos.length,
-                itemBuilder: (context, index) {
-                  final tipo = state.tipos[index];
-                  return ListTile(
-                    leading: const Icon(Icons.folder, color: Color(0xFF3E77BC)),
-                    title: Text(
-                      tipo.tipoSolicitud,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    onTap: () => Navigator.pop(context, tipo),
-                  );
-                },
+              return SelectorGenericoBottomSheet<TipoSolicitudModel>(
+                titulo: "Seleccionar Tipo",
+                items: state.tipos,
+                labelExtractor: (tipo) => tipo.tipoSolicitud,
               );
             }
-            return const SizedBox();
+            return const Center(
+              child: CircularProgressIndicator(color: Colors.white),
+            );
           },
         );
       },
@@ -214,10 +194,22 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (bottomSheetContext) => BlocProvider.value(
-        value: subtiposCubit,
-        child: const SelectorSubtiposBottomSheet(),
-      ),
+      builder: (bottomSheetContext) =>
+          BlocBuilder<SubtiposCubit, SubtiposState>(
+            bloc: subtiposCubit,
+            builder: (context, state) {
+              if (state is SubtiposLoaded) {
+                return SelectorGenericoBottomSheet<SubtipoSolicitudModel>(
+                  titulo: "Seleccionar Subtipo",
+                  items: state.subtipos,
+                  labelExtractor: (sub) => sub.subtipoSolicitu,
+                );
+              }
+              return const Center(
+                child: CircularProgressIndicator(color: Colors.white),
+              );
+            },
+          ),
     );
 
     if (resultado != null) {
@@ -227,9 +219,143 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
     }
   }
 
+  void _abrirSelectorResponsable() async {
+    final authState = context.read<AuthCubit>().state;
+    if (authState is! AuthAuthenticated) return;
+
+    final cubit = context.read<UsuariosSustitucionCubit>();
+
+    // 1. Si ya tenemos la lista cargada, abrimos el modal directamente
+    if (cubit.state is UsuariosSustitucionLoaded) {
+      _invocarModalResponsable(
+        (cubit.state as UsuariosSustitucionLoaded).lista,
+      );
+      return;
+    }
+
+    // 2. Si no, activamos el overlay y cargamos
+    setState(() => _isProcessing = true);
+
+    try {
+      await cubit.fetchUsuarios(authState.user);
+
+      if (!mounted) return;
+
+      final currentState = cubit.state;
+      if (currentState is UsuariosSustitucionLoaded) {
+        _invocarModalResponsable(currentState.lista);
+      } else if (currentState is UsuariosSustitucionError) {
+        _showSnackBar("Error: ${currentState.message}", Colors.redAccent);
+      }
+    } catch (e) {
+      _showSnackBar("Error de conexión", Colors.redAccent);
+    } finally {
+      // 3. Pase lo que pase (éxito o error), quitamos el spinner de carga
+      if (mounted) setState(() => _isProcessing = false);
+    }
+  }
+
+  // Método auxiliar para abrir el selector genérico y mantener el código limpio
+  void _invocarModalResponsable(List<UsuarioSustitucionModel> usuarios) async {
+    final resultado = await showModalBottomSheet<UsuarioSustitucionModel>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) =>
+          SelectorGenericoBottomSheet<UsuarioSustitucionModel>(
+            titulo: "Responsable a Cargo",
+            items: usuarios,
+            labelExtractor: (u) => u.nombreCompleto,
+            hintText: "Buscar por nombre...",
+          ),
+    );
+
+    if (resultado != null) {
+      setState(() => _responsableSeleccionado = resultado);
+    }
+  }
+
   // --- MODAL DE ÉXITO DINÁMICA ---
+  // void _mostrarModalExito() {
+  //   final nombreTramite = _tipoSeleccionado?.tipoSolicitud ?? "trámite";
+  //   _limpiarFormulario();
+  //   showDialog(
+  //     context: context,
+  //     barrierDismissible: false,
+  //     builder: (BuildContext dialogContext) {
+  //       return Dialog(
+  //         shape: RoundedRectangleBorder(
+  //           borderRadius: BorderRadius.circular(24),
+  //         ),
+  //         backgroundColor: Colors.white,
+  //         child: Padding(
+  //           padding: const EdgeInsets.all(24),
+  //           child: Column(
+  //             mainAxisSize: MainAxisSize.min,
+  //             children: [
+  //               const Icon(
+  //                 Icons.check_circle_rounded,
+  //                 color: Color(0xFF22C55E),
+  //                 size: 64,
+  //               ),
+  //               const SizedBox(height: 16),
+  //               const Text(
+  //                 "¡Éxito!",
+  //                 style: TextStyle(
+  //                   fontSize: 24,
+  //                   fontWeight: FontWeight.w900,
+  //                   color: Color(0xFF1E293B),
+  //                 ),
+  //               ),
+  //               const SizedBox(height: 8),
+  //               Text(
+  //                 "Registro de $nombreTramite exitoso.",
+  //                 textAlign: TextAlign.center,
+  //                 style: const TextStyle(
+  //                   fontSize: 16,
+  //                   color: Color(0xFF64748B),
+  //                   fontWeight: FontWeight.w500,
+  //                 ),
+  //               ),
+  //               const SizedBox(height: 32),
+  //               SizedBox(
+  //                 width: double.infinity,
+  //                 height: 50,
+  //                 child: ElevatedButton(
+  //                   style: ElevatedButton.styleFrom(
+  //                     backgroundColor: const Color(0xFF3E77BC),
+  //                     shape: RoundedRectangleBorder(
+  //                       borderRadius: BorderRadius.circular(16),
+  //                     ),
+  //                     elevation: 0,
+  //                   ),
+  //                   onPressed: () {
+  //                     Navigator.of(dialogContext).pop();
+  //                     // context.go('/rh-dashboard'); // Descomenta si usas GoRouter
+  //                   },
+  //                   child: const Text(
+  //                     "Aceptar",
+  //                     style: TextStyle(
+  //                       color: Colors.white,
+  //                       fontSize: 16,
+  //                       fontWeight: FontWeight.bold,
+  //                     ),
+  //                   ),
+  //                 ),
+  //               ),
+  //             ],
+  //           ),
+  //         ),
+  //       );
+  //     },
+  //   );
+  // }
   void _mostrarModalExito() {
+    // 1. Capturamos el nombre ANTES de limpiar para no perderlo en el mensaje
     final nombreTramite = _tipoSeleccionado?.tipoSolicitud ?? "trámite";
+
+    // 2. Reseteamos la vista de fondo a su estado inicial
+    _limpiarFormulario();
 
     showDialog(
       context: context,
@@ -282,12 +408,8 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
                       elevation: 0,
                     ),
                     onPressed: () {
-                      // 1. Cerramos el diálogo primero
+                      // Solo cerramos la modal. El formulario atrás ya está limpio.
                       Navigator.of(dialogContext).pop();
-
-                      // 2. Redirigimos al Dashboard usando la ruta de GoRouter
-                      // Esto limpia el stack y evita la pantalla negra.
-                      // context.go('/rh-dashboard');
                     },
                     child: const Text(
                       "Aceptar",
@@ -314,7 +436,6 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      // BLOC LISTENER PARA ESCUCHAR AL BACKEND
       body: BlocListener<SolicitudesCubit, SolicitudesState>(
         listener: (context, state) {
           if (state is SolicitudesLoading) {
@@ -352,6 +473,7 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
                     ),
                     const SizedBox(height: 32),
 
+                    // 1. TIPO DE TRÁMITE
                     _label("TIPO DE TRÁMITE"),
                     InkWell(
                       onTap: _abrirSelectorTipos,
@@ -397,9 +519,9 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
                         ),
                       ),
                     ),
-
                     const SizedBox(height: 24),
 
+                    // 2. SUBTIPO DE TRÁMITE
                     _label("SUBTIPO DE TRÁMITE"),
                     InkWell(
                       onTap: _tipoSeleccionado == null
@@ -451,9 +573,9 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
                         ),
                       ),
                     ),
-
                     const SizedBox(height: 24),
 
+                    // INFO CARD
                     if (_subtipoSeleccionado != null)
                       InfoCardSolicitud(
                         label:
@@ -465,9 +587,59 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
                         unit: "Días",
                         icon: Icons.assignment_rounded,
                       ),
-
                     const SizedBox(height: 24),
 
+                    // 3. RESPONSABLE (¡NUEVO!)
+                    _label("RESPONSABLE A CARGO"),
+                    InkWell(
+                      onTap: _abrirSelectorResponsable,
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: const Color(0xFFE2E8F0),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.person_pin_rounded,
+                              color: Color(0xFF3E77BC),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                _responsableSeleccionado?.nombreCompleto ??
+                                    "Seleccionar responsable...",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: _responsableSeleccionado != null
+                                      ? const Color(0xFF1E293B)
+                                      : const Color(0xFF94A3B8),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              color: Color(0xFF64748B),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // 4. PERIODO
                     _label("SELECCIONA EL PERIODO:"),
                     InkWell(
                       onTap: _tipoSeleccionado == null
@@ -509,9 +681,9 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
                         ),
                       ),
                     ),
-
                     const SizedBox(height: 40),
 
+                    // BOTON ENVIAR
                     SizedBox(
                       width: double.infinity,
                       height: 56,
@@ -538,7 +710,6 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
               ),
             ),
 
-            // --- PANTALLA DE CARGA (OVERLAY) ---
             if (_isProcessing)
               Container(
                 color: Colors.black45,
@@ -578,4 +749,30 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
       ),
     ),
   );
+  void _showSnackBar(String message, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: color,
+        behavior: SnackBarBehavior
+            .floating, // Hace que se vea flotante y más elegante
+      ),
+    );
+  }
+
+  void _limpiarFormulario() {
+    setState(() {
+      _tipoSeleccionado = null;
+      _subtipoSeleccionado = null;
+      _fechaInicio = null;
+      _fechaFin = null;
+      _responsableSeleccionado = null;
+    });
+  }
 }

@@ -8,6 +8,7 @@ import 'package:finansale/features/rh/presentation/cubit/aprobaciones_cubit.dart
 import 'package:finansale/features/rh/presentation/cubit/solicitudes_cubit.dart';
 import 'package:finansale/features/rh/presentation/cubit/subtipos/subtipos_cubit.dart';
 import 'package:finansale/features/rh/presentation/cubit/tipos/tipos_cubit.dart';
+import 'package:finansale/features/rh/presentation/cubit/usuarios_sustitucion/usuarios_sustitucion_cubit.dart';
 import 'package:finansale/features/rh/presentation/pages/historial_page.dart';
 import 'package:finansale/features/rh/presentation/pages/aprobaciones_pendientes_page.dart';
 import 'package:finansale/features/rh/presentation/pages/estado_solicitudes_page.dart';
@@ -106,6 +107,11 @@ class AppRouter {
                   BlocProvider<SubtiposCubit>(
                     create: (context) =>
                         SubtiposCubit(RhRepositoryImpl(RhRemoteDataSource())),
+                  ),
+                  BlocProvider<UsuariosSustitucionCubit>(
+                    create: (context) => UsuariosSustitucionCubit(
+                      RhRepositoryImpl(RhRemoteDataSource()),
+                    ),
                   ),
                 ],
                 child: const NuevaSolicitudPage(),

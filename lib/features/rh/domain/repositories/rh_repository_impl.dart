@@ -2,6 +2,7 @@ import 'package:finansale/features/auth/data/models/user_model.dart';
 import 'package:finansale/features/rh/data/datasources/rh_remote_data_source.dart';
 import 'package:finansale/features/rh/data/models/subtipo_solicitud_model.dart';
 import 'package:finansale/features/rh/data/models/tipo_solicitud_model.dart';
+import 'package:finansale/features/rh/data/models/usuario_sustitucion_model.dart';
 
 import '../../domain/repositories/rh_repository.dart';
 
@@ -22,5 +23,12 @@ class RhRepositoryImpl implements RhRepository {
   ) async {
     // AHORA SÍ PASAMOS AMBOS PARÁMETROS CORRECTAMENTE
     return await remoteDataSource.getSubtiposPorTipo(user, idTipoSolicitud);
+  }
+
+  @override
+  Future<List<UsuarioSustitucionModel>> getUsuariosSustitucion(
+    UserModel user,
+  ) async {
+    return await remoteDataSource.getUsuariosSustitucion(user);
   }
 }
