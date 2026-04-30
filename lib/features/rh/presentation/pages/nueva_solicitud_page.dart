@@ -1,3 +1,7 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart' as fp;
 import 'package:finansale/features/rh/data/models/subtipo_solicitud_model.dart';
 import 'package:finansale/features/rh/data/models/tipo_solicitud_model.dart';
 import 'package:finansale/features/rh/data/models/usuario_sustitucion_model.dart';
@@ -5,8 +9,10 @@ import 'package:finansale/features/rh/presentation/cubit/usuarios_sustitucion/us
 import 'package:finansale/features/rh/presentation/widgets/selector_generico_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-
+import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter/foundation.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../auth/presentation/cubit/auth_state.dart';
 import '../cubit/solicitudes_cubit.dart';
@@ -15,6 +21,16 @@ import '../cubit/subtipos/subtipos_cubit.dart';
 import '../cubit/subtipos/subtipos_state.dart';
 import '../cubit/tipos/tipos_cubit.dart';
 import '../widgets/info_card_solicitud.dart';
+
+/// Top-level function para compute() — DEBE estar fuera de cualquier clase
+/// para que el isolate pueda acceder a ella.
+Future<Map<String, String>> _procesarBase64Background(String path) async {
+  final file = File(path);
+  final bytes = await file.readAsBytes();
+  final base64Str = base64Encode(bytes);
+  final sizeKb = (bytes.length / 1024).toStringAsFixed(0);
+  return {"base64": base64Str, "size": sizeKb};
+}
 
 class NuevaSolicitudPage extends StatefulWidget {
   const NuevaSolicitudPage({super.key});
@@ -32,6 +48,43 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
   UsuarioSustitucionModel? _responsableSeleccionado;
 
   bool _isProcessing = false;
+  final ImagePicker _picker = ImagePicker();
+  File? _archivoAdjunto;
+  String? _nombreAdjunto;
+  String? _tamanioAdjunto;
+  String? _base64Adjunto;
+  @override
+  void initState() {
+    super.initState();
+    // Ejecutamos el salvavidas al iniciar la pantalla
+    _recuperarDatosPerdidos();
+  }
+
+  Future<void> _recuperarDatosPerdidos() async {
+    final LostDataResponse response = await _picker.retrieveLostData();
+    if (response.isEmpty) return;
+
+    if (response.file != null) {
+      // 🚀 Si Android nos cerró, aquí procesamos la foto que se quedó en el limbo
+      final resultado = await compute(
+        _procesarBase64Background,
+        response.file!.path,
+      );
+
+      setState(() {
+        _archivoAdjunto = File(response.file!.path);
+        _nombreAdjunto =
+            "foto_recuperada_${DateTime.now().millisecondsSinceEpoch}.jpg";
+        _tamanioAdjunto = resultado["size"];
+        _base64Adjunto = resultado["base64"];
+      });
+    } else if (response.exception != null) {
+      _showSnackBar(
+        "Error nativo al recuperar: ${response.exception!.message}",
+        Colors.red,
+      );
+    }
+  }
 
   // --- LÓGICA DE FECHAS ---
   DateTime _calcularDiasHabiles(DateTime inicio, int diasASumar) {
@@ -108,7 +161,90 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
     }
   }
 
-  // --- DISPARADOR DEL POST (GUARDAR) ---
+  Future<void> _tomarFotoAdjunto() async {
+    final status = await Permission.camera.request();
+    if (!status.isGranted) {
+      _showSnackBar("Permiso de cámara denegado", Colors.red);
+      return;
+    }
+
+    setState(() => _isProcessing = true);
+
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? photo = await picker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 50, // Compresión alta para cuidar la RAM
+        maxWidth: 800, // Límite estricto
+      );
+
+      if (photo != null && mounted) {
+        // 🚀 MAGIA AQUÍ: Mandamos a leer los bytes a otro núcleo del procesador
+        final resultado = await compute(_procesarBase64Background, photo.path);
+
+        setState(() {
+          _archivoAdjunto = File(photo.path);
+          _nombreAdjunto = "foto_${DateTime.now().millisecondsSinceEpoch}.jpg";
+          _tamanioAdjunto = resultado["size"];
+          _base64Adjunto = resultado["base64"];
+        });
+      }
+    } catch (e) {
+      _showSnackBar("Error al procesar la cámara", Colors.redAccent);
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
+    }
+  }
+
+  // 2. ADJUNTAR ARCHIVO (BLINDADO)
+  Future<void> _seleccionarDocumentoAdjunto() async {
+    setState(() => _isProcessing = true);
+
+    try {
+      // 🚨 FIX: Quitamos '.platform' y usamos 'fp.FilePicker.pickFiles' directamente
+      fp.FilePickerResult? result = await fp.FilePicker.pickFiles(
+        type: fp.FileType.custom,
+        allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'],
+      );
+
+      if (result != null && result.files.single.path != null && mounted) {
+        final path = result.files.single.path!;
+        File file = File(path);
+        int sizeInBytes = await file.length();
+        int sizeInMb = sizeInBytes ~/ (1024 * 1024);
+
+        // Si pesa más de 5MB, abortamos antes de que explote la RAM
+        if (sizeInMb > 5) {
+          _showSnackBar("El archivo es muy pesado (Máx 5MB)", Colors.orange);
+          return;
+        }
+
+        // Trabajo pesado en segundo plano
+        final resultado = await compute(_procesarBase64Background, path);
+
+        setState(() {
+          _archivoAdjunto = file;
+          _nombreAdjunto = result.files.single.name;
+          _tamanioAdjunto = resultado["size"];
+          _base64Adjunto = resultado["base64"];
+        });
+      }
+    } catch (e) {
+      _showSnackBar("Error al leer el documento", Colors.redAccent);
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
+    }
+  }
+
+  void _eliminarAdjunto() {
+    setState(() {
+      _archivoAdjunto = null;
+      _nombreAdjunto = null;
+      _tamanioAdjunto = null;
+      _base64Adjunto = null;
+    });
+  }
+
   void _prepararPayload() {
     // Agregamos validación opcional u obligatoria para responsable (ajusta según tu negocio)
     if (_fechaInicio == null ||
@@ -127,15 +263,16 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
     final authState = context.read<AuthCubit>().state;
 
     if (authState is AuthAuthenticated) {
-      // 🚨 IMPORTANTE: Asegúrate de que en tu SolicitudesCubit.crearSolicitud
-      // hayas agregado el parámetro idUsuarioResponsable para que lo envíe a Flask.
       context.read<SolicitudesCubit>().crearSolicitud(
         user: authState.user,
         fechaInicio: format.format(_fechaInicio!),
         fechaFin: format.format(_fechaFin!),
         idTipoSolicitud: _tipoSeleccionado!.idTipoSolicitud,
         idUsuarioSustituto: _responsableSeleccionado?.idUsuario,
-        // idUsuarioResponsable: _responsableSeleccionado?.idUsuario, <-- DESCOMENTA CUANDO ACTUALICES EL CUBIT
+
+        nombreAdjunto: _nombreAdjunto,
+        tamanioAdjunto: _tamanioAdjunto,
+        adjuntoBase64: _base64Adjunto,
       );
     }
   }
@@ -683,6 +820,119 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
                     ),
                     const SizedBox(height: 40),
 
+                    // --- SECCIÓN DE ADJUNTOS ---
+                    _label("EVIDENCIA / ADJUNTO (Opcional)"),
+                    if (_archivoAdjunto == null)
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: _tomarFotoAdjunto,
+                              icon: const Icon(
+                                Icons.camera_alt_rounded,
+                                color: Color(0xFF3E77BC),
+                              ),
+                              label: const Text(
+                                "Cámara",
+                                style: TextStyle(color: Color(0xFF3E77BC)),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
+                                side: const BorderSide(
+                                  color: Color(0xFF3E77BC),
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: _seleccionarDocumentoAdjunto,
+                              icon: const Icon(
+                                Icons.upload_file_rounded,
+                                color: Color(0xFF3E77BC),
+                              ),
+                              label: const Text(
+                                "Archivo",
+                                style: TextStyle(color: Color(0xFF3E77BC)),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
+                                side: const BorderSide(
+                                  color: Color(0xFF3E77BC),
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    else
+                      // PREVISUALIZACIÓN OPTIMIZADA
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              _nombreAdjunto!.endsWith('.pdf')
+                                  ? Icons.picture_as_pdf_rounded
+                                  : Icons.image_rounded,
+                              color: _nombreAdjunto!.endsWith('.pdf')
+                                  ? Colors.redAccent
+                                  : const Color(0xFF3E77BC),
+                              size: 40,
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _nombreAdjunto!,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF1E293B),
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    "$_tamanioAdjunto KB",
+                                    style: const TextStyle(
+                                      color: Color(0xFF64748B),
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: _eliminarAdjunto,
+                              icon: const Icon(
+                                Icons.delete_outline_rounded,
+                                color: Colors.redAccent,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                    const SizedBox(height: 40),
                     // BOTON ENVIAR
                     SizedBox(
                       width: double.infinity,
@@ -773,6 +1023,10 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
       _fechaInicio = null;
       _fechaFin = null;
       _responsableSeleccionado = null;
+      _archivoAdjunto = null;
+      _base64Adjunto = null;
+      _nombreAdjunto = null;
+      _tamanioAdjunto = null;
     });
   }
 }

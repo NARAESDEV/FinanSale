@@ -35,11 +35,22 @@ class _SessionManagerState extends State<SessionManager>
     super.dispose();
   }
 
+  DateTime? _pausedTime;
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Si sale de la app (2do plano o cerrada)
     if (state == AppLifecycleState.paused) {
-      _forceLogout();
+      // Guardamos la hora en que la app se fue a 2do plano (ej: abrir cámara)
+      _pausedTime = DateTime.now();
+    } else if (state == AppLifecycleState.resumed) {
+      if (_pausedTime != null) {
+        final diff = DateTime.now().difference(_pausedTime!);
+        // Si estuvo en 2do plano más de 5 minutos, forzamos cierre de sesión
+        if (diff.inMinutes >= 5) {
+          _forceLogout();
+        }
+        _pausedTime = null;
+      }
     }
   }
 

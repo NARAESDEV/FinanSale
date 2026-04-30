@@ -44,11 +44,13 @@ class SolicitudesCubit extends Cubit<SolicitudesState> {
     required int idTipoSolicitud,
     File? archivoAdjunto,
     String? idUsuarioSustituto,
+    String? nombreAdjunto,
+    String? tamanioAdjunto,
+    String? adjuntoBase64,
   }) async {
     try {
       emit(SolicitudesLoading());
 
-      // 1. RECONSTRUIMOS EL AUTH
       final String basicAuth =
           'Basic ${base64Encode(utf8.encode('${user.correo}:${user.contrasena}'))}';
 
@@ -59,14 +61,25 @@ class SolicitudesCubit extends Cubit<SolicitudesState> {
         "idUsuarioSustituto": idUsuarioSustituto,
       };
 
-      // 2. ENVIAMOS EL PAYLOAD JUNTO CON EL HEADER DE SEGURIDAD
+      if (idUsuarioSustituto != null) {
+        payload["idUsuarioSustituto"] = idUsuarioSustituto;
+      }
+
+      if (adjuntoBase64 != null && nombreAdjunto != null) {
+        payload["nombreAdjunto"] = nombreAdjunto;
+        payload["tamanioAdjunto"] = tamanioAdjunto;
+        payload["adjunto"] =
+            adjuntoBase64; // <-- La llave que espera tu backend
+      }
+
+      print("🚀 PAYLOAD A ENVIAR: $payload");
+
       await _dio.post(
         '/solicitudes/',
         data: payload,
         options: Options(headers: {'Authorization': basicAuth}),
       );
 
-      // Asegúrate de que este estado exista en tu archivo solicitudes_state.dart
       emit(SolicitudCreadaExito());
     } catch (e) {
       emit(SolicitudesError("Error al crear la solicitud"));
