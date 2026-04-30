@@ -86,11 +86,11 @@ class AppRouter {
             pageBuilder: (context, state) => NoTransitionPage(
               child: MultiBlocProvider(
                 providers: [
-                  // 1. Cubit para Enviar el Formulario (Evita tu error rojo)
+                  // Cubit para Enviar el Formulario
                   BlocProvider<SolicitudesCubit>(
                     create: (context) => SolicitudesCubit(),
                   ),
-                  // 2. Cubit para traer los Tipos (Lo disparamos al abrir la pantalla)
+                  // Cubit para traer los Tipos
                   BlocProvider<TiposCubit>(
                     create: (context) {
                       final authState = context.read<AuthCubit>().state;
@@ -103,7 +103,7 @@ class AppRouter {
                       return cubit;
                     },
                   ),
-                  // 3. Cubit de Subtipos (Nace pausado, se dispara al elegir el Tipo)
+
                   BlocProvider<SubtiposCubit>(
                     create: (context) =>
                         SubtiposCubit(RhRepositoryImpl(RhRemoteDataSource())),

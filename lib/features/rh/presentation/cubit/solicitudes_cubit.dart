@@ -25,7 +25,7 @@ class SolicitudesCubit extends Cubit<SolicitudesState> {
         options: Options(headers: {'Authorization': basicAuth}),
       );
 
-      // OJO AQUÍ: Extraemos el arreglo que viene dentro de la llave "solicitudes"
+      //  Extraemos el arreglo que viene dentro de la llave "solicitudes"
       final List<dynamic> data = response.data['solicitudes'] ?? [];
       final Map<String, dynamic> resumen =
           response.data['resumen_periodo'] ?? {};
@@ -68,11 +68,10 @@ class SolicitudesCubit extends Cubit<SolicitudesState> {
       if (adjuntoBase64 != null && nombreAdjunto != null) {
         payload["nombreAdjunto"] = nombreAdjunto;
         payload["tamanioAdjunto"] = tamanioAdjunto;
-        payload["adjunto"] =
-            adjuntoBase64; // <-- La llave que espera tu backend
+        payload["adjunto"] = adjuntoBase64;
       }
 
-      print("🚀 PAYLOAD A ENVIAR: $payload");
+      print("PAYLOAD A ENVIAR: $payload");
 
       await _dio.post(
         '/solicitudes/',

@@ -8,12 +8,10 @@ class SubtiposCubit extends Cubit<SubtiposState> {
 
   SubtiposCubit(this._repository) : super(SubtiposInitial());
 
-  // AHORA PEDIMOS EL idTipoSolicitud COMO PARÁMETRO
   Future<void> fetchSubtipos(UserModel user, int idTipoSolicitud) async {
     try {
       emit(SubtiposLoading());
 
-      // LLAMAMOS AL NUEVO MÉTODO DEL REPOSITORIO
       final lista = await _repository.getSubtiposPorTipo(user, idTipoSolicitud);
 
       emit(SubtiposLoaded(lista));

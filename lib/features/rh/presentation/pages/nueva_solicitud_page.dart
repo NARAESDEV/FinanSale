@@ -22,8 +22,6 @@ import '../cubit/subtipos/subtipos_state.dart';
 import '../cubit/tipos/tipos_cubit.dart';
 import '../widgets/info_card_solicitud.dart';
 
-/// Top-level function para compute() — DEBE estar fuera de cualquier clase
-/// para que el isolate pueda acceder a ella.
 Future<Map<String, String>> _procesarBase64Background(String path) async {
   final file = File(path);
   final bytes = await file.readAsBytes();
@@ -56,7 +54,7 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
   @override
   void initState() {
     super.initState();
-    // Ejecutamos el salvavidas al iniciar la pantalla
+
     _recuperarDatosPerdidos();
   }
 
@@ -65,7 +63,6 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
     if (response.isEmpty) return;
 
     if (response.file != null) {
-      // 🚀 Si Android nos cerró, aquí procesamos la foto que se quedó en el limbo
       final resultado = await compute(
         _procesarBase64Background,
         response.file!.path,
@@ -174,12 +171,11 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
       final ImagePicker picker = ImagePicker();
       final XFile? photo = await picker.pickImage(
         source: ImageSource.camera,
-        imageQuality: 50, // Compresión alta para cuidar la RAM
-        maxWidth: 800, // Límite estricto
+        imageQuality: 50,
+        maxWidth: 800,
       );
 
       if (photo != null && mounted) {
-        // 🚀 MAGIA AQUÍ: Mandamos a leer los bytes a otro núcleo del procesador
         final resultado = await compute(_procesarBase64Background, photo.path);
 
         setState(() {
@@ -201,7 +197,6 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
     setState(() => _isProcessing = true);
 
     try {
-      // 🚨 FIX: Quitamos '.platform' y usamos 'fp.FilePicker.pickFiles' directamente
       fp.FilePickerResult? result = await fp.FilePicker.pickFiles(
         type: fp.FileType.custom,
         allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'],
@@ -213,7 +208,6 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
         int sizeInBytes = await file.length();
         int sizeInMb = sizeInBytes ~/ (1024 * 1024);
 
-        // Si pesa más de 5MB, abortamos antes de que explote la RAM
         if (sizeInMb > 5) {
           _showSnackBar("El archivo es muy pesado (Máx 5MB)", Colors.orange);
           return;
@@ -362,7 +356,7 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
 
     final cubit = context.read<UsuariosSustitucionCubit>();
 
-    // 1. Si ya tenemos la lista cargada, abrimos el modal directamente
+    // Si ya tenemos la lista cargada, abrimos el modal directamente
     if (cubit.state is UsuariosSustitucionLoaded) {
       _invocarModalResponsable(
         (cubit.state as UsuariosSustitucionLoaded).lista,
@@ -370,7 +364,7 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
       return;
     }
 
-    // 2. Si no, activamos el overlay y cargamos
+    //activamos el overlay y cargamos
     setState(() => _isProcessing = true);
 
     try {
@@ -387,7 +381,7 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
     } catch (e) {
       _showSnackBar("Error de conexión", Colors.redAccent);
     } finally {
-      // 3. Pase lo que pase (éxito o error), quitamos el spinner de carga
+      //  quitamos el spinner de carga
       if (mounted) setState(() => _isProcessing = false);
     }
   }
@@ -488,10 +482,10 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
   //   );
   // }
   void _mostrarModalExito() {
-    // 1. Capturamos el nombre ANTES de limpiar para no perderlo en el mensaje
+    //  Capturamos el nombre ANTES de limpiar para no perderlo en el mensaje
     final nombreTramite = _tipoSeleccionado?.tipoSolicitud ?? "trámite";
 
-    // 2. Reseteamos la vista de fondo a su estado inicial
+    //  Reseteamos la vista de fondo a su estado inicial
     _limpiarFormulario();
 
     showDialog(
@@ -610,7 +604,7 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
                     ),
                     const SizedBox(height: 32),
 
-                    // 1. TIPO DE TRÁMITE
+                    //  TIPO DE TRÁMITE
                     _label("TIPO DE TRÁMITE"),
                     InkWell(
                       onTap: _abrirSelectorTipos,
@@ -658,7 +652,7 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
                     ),
                     const SizedBox(height: 24),
 
-                    // 2. SUBTIPO DE TRÁMITE
+                    //  SUBTIPO DE TRÁMITE
                     _label("SUBTIPO DE TRÁMITE"),
                     InkWell(
                       onTap: _tipoSeleccionado == null
@@ -726,7 +720,7 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
                       ),
                     const SizedBox(height: 24),
 
-                    // 3. RESPONSABLE (¡NUEVO!)
+                    // RESPONSABLE (¡NUEVO!)
                     _label("RESPONSABLE A CARGO"),
                     InkWell(
                       onTap: _abrirSelectorResponsable,
@@ -776,7 +770,7 @@ class _NuevaSolicitudPageState extends State<NuevaSolicitudPage> {
                     ),
                     const SizedBox(height: 24),
 
-                    // 4. PERIODO
+                    //PERIODO
                     _label("SELECCIONA EL PERIODO:"),
                     InkWell(
                       onTap: _tipoSeleccionado == null

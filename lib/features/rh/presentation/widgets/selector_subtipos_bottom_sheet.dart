@@ -45,7 +45,7 @@ class _SelectorSubtiposBottomSheetState
       child: Column(
         children: [
           const SizedBox(height: 12),
-          // --- HANDLE SUPERIOR (La rayita gris) ---
+          // `HANDLE SUPERIOR
           Container(
             width: 40,
             height: 4,
