@@ -1,4 +1,6 @@
 import 'package:finansale/core/auth/session_manager.dart';
+import 'package:finansale/core/theme/app_theme.dart';
+import 'package:finansale/core/theme/theme_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -21,6 +23,8 @@ void main() async {
   runApp(
     MultiBlocProvider(
       providers: [
+        // Store de Tema
+        BlocProvider(create: (context) => ThemeCubit()),
         // Store de Autenticación
         BlocProvider(create: (context) => AuthCubit(authRepository)),
         // Store de Recursos Humanos
@@ -36,14 +40,21 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      // showPerformanceOverlay: true,
-      debugShowCheckedModeBanner: false,
-      title: 'Naraes App',
-      routerConfig: AppRouter.router,
-      builder: (context, child) {
-        // El SessionManager envuelve a toda la navegación
-        return SessionManager(child: child!);
+    return BlocBuilder<ThemeCubit, ThemeMode>(
+      builder: (context, themeMode) {
+        return MaterialApp.router(
+          // showPerformanceOverlay: true,
+          debugShowCheckedModeBanner: false,
+          title: 'Naraes App',
+          theme: NaraesTheme.lightTheme,
+          darkTheme: NaraesTheme.darkTheme,
+          themeMode: themeMode,
+          routerConfig: AppRouter.router,
+          builder: (context, child) {
+            // El SessionManager envuelve a toda la navegación
+            return SessionManager(child: child!);
+          },
+        );
       },
     );
   }

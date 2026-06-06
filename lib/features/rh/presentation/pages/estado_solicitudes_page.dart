@@ -1,3 +1,7 @@
+import 'package:finansale/features/auth/presentation/cubit/auth_cubit.dart';
+import 'package:finansale/features/auth/presentation/cubit/auth_state.dart';
+import 'package:finansale/features/rh/presentation/cubit/detalle_solicitud_cubit.dart';
+import 'package:finansale/features/rh/presentation/pages/detalle_solicitud_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../shared/widgets/personalizado_card.dart';
@@ -10,7 +14,7 @@ class EstadoSolicitudesPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FCFF),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: const Color(0xFF3E77BC),
         iconTheme: const IconThemeData(color: Colors.white),
@@ -72,7 +76,33 @@ class EstadoSolicitudesPage extends StatelessWidget {
                     child: InkWell(
                       borderRadius: BorderRadius.circular(20),
                       onTap: () {
-                        print("Tocado el id: ${item.id}");
+                        final authState = context.read<AuthCubit>().state;
+                        final user = authState is AuthAuthenticated
+                            ? authState.user
+                            : null;
+
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => MultiBlocProvider(
+                              providers: [
+                                BlocProvider<SolicitudesCubit>(
+                                  create: (context) => SolicitudesCubit(),
+                                ),
+                                BlocProvider<DetalleSolicitudCubit>(
+                                  create: (context) {
+                                    final cubit = DetalleSolicitudCubit();
+                                    if (user != null) {
+                                      cubit.getDetalleSolicitud(user, item.id);
+                                    }
+                                    return cubit;
+                                  },
+                                ),
+                              ],
+                              child: DetalleSolicitudPage(idSolicitud: item.id),
+                            ),
+                          ),
+                        );
                         // context.push('/detalle-solicitud/${item.id}');
                       },
                       child: Column(
@@ -102,21 +132,26 @@ class EstadoSolicitudesPage extends StatelessWidget {
                                       item.nombre,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontWeight: FontWeight.w800,
                                         fontSize: 18,
-                                        color: Color(0xFF1F2937),
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurface,
                                       ),
                                     ),
                                     const SizedBox(height: 4),
-                                    const Text(
+                                    Text(
                                       'Solicitud de vacaciones',
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w500,
-                                        color: Color(0xFF64748B),
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface
+                                            .withValues(alpha: 0.6),
                                       ),
                                     ),
                                   ],
@@ -151,7 +186,9 @@ class EstadoSolicitudesPage extends StatelessWidget {
                               vertical: 14,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF5F7FA),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.surfaceContainerHighest,
                               borderRadius: BorderRadius.circular(18),
                             ),
                             child: Row(

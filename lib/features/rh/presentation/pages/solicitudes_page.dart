@@ -11,8 +11,8 @@ class SolicitudesPage extends StatelessWidget {
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
       },
-      child: const Scaffold(
-        backgroundColor: Color(0xFFF9FCFF), // Fondo institucional
+      child: Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -20,21 +20,28 @@ class SolicitudesPage extends StatelessWidget {
               Icon(
                 Icons.assignment_outlined,
                 size: 80,
-                color: Color(0xFFC0C8D4),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.3),
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               Text(
                 "Módulo de Solicitudes",
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1F2937),
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
                 "Pantalla en construcción para la próxima fase.",
-                style: TextStyle(fontSize: 14, color: Color(0xFF64748B)),
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
               ),
             ],
           ),

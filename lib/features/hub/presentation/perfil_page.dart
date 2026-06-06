@@ -20,7 +20,7 @@ class PerfilPage extends StatelessWidget {
         // mostrar confirmación
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFFF9FCFF),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: SafeArea(
           bottom: false,
           child: BlocBuilder<PerfilCubit, PerfilState>(

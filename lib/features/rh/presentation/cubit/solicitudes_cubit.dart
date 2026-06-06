@@ -85,7 +85,6 @@ class SolicitudesCubit extends Cubit<SolicitudesState> {
     }
   }
 
-  // --- MÉTODO PUT/PATCH: EDITAR SOLICITUD ---
   Future<void> editarSolicitud({
     required UserModel user,
     required int idSolicitudAEditar,
@@ -93,11 +92,8 @@ class SolicitudesCubit extends Cubit<SolicitudesState> {
     required String fechaFin,
   }) async {
     try {
-      emit(SolicitudesLoading());
-
       final String basicAuth =
           'Basic ${base64Encode(utf8.encode('${user.correo}:${user.contrasena}'))}';
-
       final payload = {"fechaInicio": fechaInicio, "fechaFin": fechaFin};
 
       await _dio.put(
@@ -108,7 +104,9 @@ class SolicitudesCubit extends Cubit<SolicitudesState> {
 
       emit(SolicitudEditadaExito());
     } catch (e) {
-      emit(SolicitudesError("Error al editar la solicitud"));
+      emit(
+        SolicitudesError("Error al intentar modificar las fechas del trámite"),
+      );
     }
   }
 }

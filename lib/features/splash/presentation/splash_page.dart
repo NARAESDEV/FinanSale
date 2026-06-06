@@ -53,7 +53,7 @@ class _SplashPageState extends State<SplashPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FCFF),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Center(
         child: Lottie.asset(
           'assets/animations/NARAESV1.json',

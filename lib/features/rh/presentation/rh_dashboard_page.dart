@@ -30,7 +30,7 @@ class RhDashboardPage extends StatelessWidget {
         context.go('/hub');
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFFF9FCFF),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: BlocBuilder<RhCubit, RhState>(
           builder: (context, state) {
             // Estado de carga inicial
@@ -223,6 +223,7 @@ class RhDashboardPage extends StatelessWidget {
     );
   }
 
+  // Paste este método al final de la clase _HistorialSolicitudesPageState
   Widget _buildListaAprobaciones(List<AprobacionPendiente> lista) {
     if (lista.isEmpty) {
       return const Center(
@@ -247,7 +248,6 @@ class RhDashboardPage extends StatelessWidget {
                 backgroundColor: Color(0xFF3E77BC),
                 child: Icon(Icons.person, color: Colors.white),
               ),
-              // PROPIEDADES CON PUNTO, NO CON CORCHETES
               title: Text(
                 item.nombre,
                 style: const TextStyle(fontWeight: FontWeight.bold),
@@ -255,7 +255,7 @@ class RhDashboardPage extends StatelessWidget {
               subtitle: Text("Del ${item.fechaInicio} al ${item.fechaFin}"),
               trailing: const Icon(Icons.chevron_right, color: Colors.grey),
               onTap: () {
-                // Aquí puedes usar item.id para navegar al detalle
+                // Navegación con item.id
               },
             ),
           ),

@@ -134,7 +134,7 @@ class AppRouter {
                   // Fallback por seguridad
                   return SolicitudesCubit();
                 },
-                child: const HistorialPage(),
+                child: const HistorialSolicitudesPage(),
               ),
             ),
           ),

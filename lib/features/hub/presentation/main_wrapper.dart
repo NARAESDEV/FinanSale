@@ -19,23 +19,25 @@ class MainWrapper extends StatelessWidget {
     final selectedIndex = _getSelectedIndex(currentPath);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F8FC),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: child,
       bottomNavigationBar: DecoratedBox(
-        decoration: const BoxDecoration(
-          color: Color(0xFFFCFDFE),
-          border: Border(top: BorderSide(color: Color(0xFFE2E8F0), width: 1)),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          border: Border(
+            top: BorderSide(color: Theme.of(context).dividerColor, width: 1),
+          ),
           boxShadow: [
             BoxShadow(
-              color: Color(0x140F172A),
+              color: const Color(0xFF0F172A).withValues(alpha: 0.08),
               blurRadius: 20,
-              offset: Offset(0, -4),
+              offset: const Offset(0, -4),
               spreadRadius: -6,
             ),
             BoxShadow(
-              color: Color(0x0A0F172A),
+              color: const Color(0xFF0F172A).withValues(alpha: 0.04),
               blurRadius: 6,
-              offset: Offset(0, -1),
+              offset: const Offset(0, -1),
             ),
           ],
         ),
@@ -96,6 +98,11 @@ class MainWrapper extends StatelessWidget {
     required String currentPath,
     required bool isSelected,
   }) {
+    final primaryColor = Theme.of(context).colorScheme.primary;
+    final mutedColor = Theme.of(
+      context,
+    ).colorScheme.onSurface.withValues(alpha: 0.4);
+
     return Expanded(
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
@@ -112,12 +119,12 @@ class MainWrapper extends StatelessWidget {
             ),
             decoration: BoxDecoration(
               color: isSelected
-                  ? const Color(0xFF3E77BC).withValues(alpha: 0.10)
+                  ? primaryColor.withValues(alpha: 0.10)
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(18),
               border: isSelected
                   ? Border.all(
-                      color: const Color(0xFF3E77BC).withValues(alpha: 0.12),
+                      color: primaryColor.withValues(alpha: 0.12),
                       width: 1,
                     )
                   : null,
@@ -128,9 +135,7 @@ class MainWrapper extends StatelessWidget {
                 Icon(
                   icon,
                   size: 22,
-                  color: isSelected
-                      ? const Color(0xFF3E77BC)
-                      : const Color(0xFF94A3B8),
+                  color: isSelected ? primaryColor : mutedColor,
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -141,9 +146,7 @@ class MainWrapper extends StatelessWidget {
                     fontSize: 11,
                     height: 1,
                     fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                    color: isSelected
-                        ? const Color(0xFF3E77BC)
-                        : const Color(0xFF94A3B8),
+                    color: isSelected ? primaryColor : mutedColor,
                   ),
                 ),
               ],

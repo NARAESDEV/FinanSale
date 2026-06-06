@@ -29,7 +29,7 @@ class HubScreen extends StatelessWidget {
         _showLogoutDialog(context);
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFFF8FAFC), // Un gris muy tenue de fondo
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: Column(
           children: [
             NaraesHeader(

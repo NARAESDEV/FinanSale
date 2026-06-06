@@ -1,5 +1,7 @@
+import 'package:finansale/core/theme/theme_cubit.dart';
 import 'package:finansale/features/hub/data/model/perfil_model.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../shared/widgets/personalizado_card.dart';
 
 class PerfilHeader extends StatelessWidget {
@@ -29,31 +31,36 @@ class PerfilHeader extends StatelessWidget {
         const SizedBox(height: 16),
         Text(
           perfil.nombreCompleto,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.w800,
-            color: Color(0xFF1F2937),
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 4),
         Text(
           perfil.correo,
-          style: const TextStyle(fontSize: 14, color: Color(0xFF64748B)),
+          style: TextStyle(
+            fontSize: 14,
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.6),
+          ),
         ),
         const SizedBox(height: 12),
         // Placa (Badge) de la empresa
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
           decoration: BoxDecoration(
-            color: const Color(0xFF1F2937),
+            color: Theme.of(context).colorScheme.onSurface,
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
             perfil.empresa.toUpperCase(),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               letterSpacing: 1,
             ),
           ),
@@ -77,22 +84,20 @@ class InfoLaboralCard extends StatelessWidget {
           children: [
             const Text(
               "Información Laboral",
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF1F2937),
-              ),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
             _buildRow(
+              context,
               Icons.work_outline_rounded,
               "Puesto / Cargo",
               perfil.perfil,
             ),
-            const Divider(height: 30, color: Color(0xFFF1F5F9)),
-            _buildRow(Icons.domain_rounded, "Empresa", perfil.empresa),
-            const Divider(height: 30, color: Color(0xFFF1F5F9)),
+            const Divider(height: 30),
+            _buildRow(context, Icons.domain_rounded, "Empresa", perfil.empresa),
+            const Divider(height: 30),
             _buildRow(
+              context,
               Icons.calendar_today_rounded,
               "Fecha de Ingreso",
               perfil.fechaIngreso,
@@ -103,7 +108,12 @@ class InfoLaboralCard extends StatelessWidget {
     );
   }
 
-  Widget _buildRow(IconData icon, String label, String value) {
+  Widget _buildRow(
+    BuildContext context,
+    IconData icon,
+    String label,
+    String value,
+  ) {
     return Row(
       children: [
         Icon(icon, color: const Color(0xFF3E77BC), size: 24),
@@ -119,10 +129,10 @@ class InfoLaboralCard extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 value,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF334155),
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ],
@@ -147,11 +157,7 @@ class VacacionesCard extends StatelessWidget {
           children: [
             const Text(
               "Balance de Vacaciones",
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF1F2937),
-              ),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             Row(
@@ -255,28 +261,20 @@ class ConfiguracionCard extends StatelessWidget {
             label: "Cambiar Contraseña",
             onTap: () {},
           ),
-          const Divider(
-            height: 1,
-            color: Color(0xFFF1F5F9),
-            indent: 20,
-            endIndent: 20,
-          ),
+          const Divider(height: 1, indent: 20, endIndent: 20),
           _ActionRow(
             icon: Icons.dark_mode_outlined,
-            label: "Modo Oscuro (Beta)",
-            trailing: Switch(
-              value: false,
-              onChanged: (v) {},
-              activeColor: const Color(0xFF3E77BC),
+            label: "Modo Oscuro",
+            trailing: BlocBuilder<ThemeCubit, ThemeMode>(
+              builder: (context, themeMode) => Switch(
+                value: themeMode == ThemeMode.dark,
+                onChanged: (_) => context.read<ThemeCubit>().toggle(),
+                activeColor: const Color(0xFF3E77BC),
+              ),
             ),
-            onTap: () {},
+            onTap: () => context.read<ThemeCubit>().toggle(),
           ),
-          const Divider(
-            height: 1,
-            color: Color(0xFFF1F5F9),
-            indent: 20,
-            endIndent: 20,
-          ),
+          const Divider(height: 1, indent: 20, endIndent: 20),
           _ActionRow(
             icon: Icons.logout_rounded,
             label: "Cerrar Sesión",
@@ -329,7 +327,7 @@ class _ActionRow extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: textColor ?? const Color(0xFF334155),
+                  color: textColor ?? Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ),

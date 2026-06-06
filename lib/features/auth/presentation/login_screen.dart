@@ -58,7 +58,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 30),
@@ -66,111 +66,101 @@ class _LoginScreenState extends State<LoginScreen> {
             children: [
               const SizedBox(height: 80),
 
-              // --- LOGO (INTACTO) ---
+              // Center(
+              //   child: Image.asset(
+              //     'assets/images/logo.png',
+              //     height: 100,
+              //     fit: BoxFit.contain,
+              //     errorBuilder: (context, error, stackTrace) => const Icon(
+              //       Icons.cloud_queue,
+              //       size: 100,
+              //       color: Colors.blue,
+              //     ),
+              //   ),
+              // ),
               Center(
-                child: Image.asset(
-                  'assets/images/logo.png',
-                  height: 100,
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) => const Icon(
-                    Icons.cloud_queue,
-                    size: 100,
-                    color: Colors.blue,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 280),
+                  child: AspectRatio(
+                    aspectRatio: 545 / 194,
+                    child: Image.asset(
+                      'assets/images/Rapiscan.png',
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) => const Icon(
+                        Icons.cloud_queue,
+                        size: 80,
+                        color: Colors.blue,
+                      ),
+                    ),
                   ),
                 ),
               ),
 
               const SizedBox(height: 10),
 
-              const Text(
-                "FinanSale",
-                style: TextStyle(
-                  fontSize: 34,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF3E77BC),
-                ),
-              ),
-
+              // const Text(
+              //   "FinanSale",
+              //   style: TextStyle(
+              //     fontSize: 34,
+              //     fontWeight: FontWeight.bold,
+              //     color: Color(0xFF3E77BC),
+              //   ),
+              // ),
               const SizedBox(height: 60),
 
-              // --- NUEVO CAMPO: URL DEL SERVIDOR (CONDICIONAL) ---
               if (_showUrlField) ...[
                 TextFormField(
                   controller: _urlController,
                   keyboardType: TextInputType.url,
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     hintText: "URL del Servidor (ej. https://api.empresa.com)",
-                    hintStyle: const TextStyle(color: Color(0xFF64748B)),
-                    filled: true,
-                    fillColor: const Color(0xFFF9FCFF),
-                    prefixIcon: const Icon(
+                    prefixIcon: Icon(
                       Icons.lan_rounded,
                       color: Color(0xFF3E77BC),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(
+                    contentPadding: EdgeInsets.symmetric(
                       horizontal: 20,
                       vertical: 18,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
                     ),
                   ),
                 ),
                 const SizedBox(height: 16),
               ],
 
-              // --- CAMPO: CORREO ELECTRÓNICO ---
               TextFormField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   hintText: "Correo electrónico",
-                  hintStyle: const TextStyle(color: Color(0xFF64748B)),
-                  filled: true,
-                  fillColor: const Color(0xFFF9FCFF),
-                  prefixIcon: const Icon(
+                  prefixIcon: Icon(
                     Icons.person_outline,
                     color: Color(0xFF3E77BC),
                   ),
-                  contentPadding: const EdgeInsets.symmetric(
+                  contentPadding: EdgeInsets.symmetric(
                     horizontal: 20,
                     vertical: 18,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
                   ),
                 ),
               ),
 
               const SizedBox(height: 16),
 
-              // --- CAMPO: CONTRASEÑA ---
               TextFormField(
                 controller: _passwordController,
                 obscureText: true,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   hintText: "Contraseña",
-                  hintStyle: const TextStyle(color: Color(0xFF64748B)),
-                  filled: true,
-                  fillColor: const Color(0xFFF9FCFF),
-                  prefixIcon: const Icon(
+                  prefixIcon: Icon(
                     Icons.lock_outline,
                     color: Color(0xFF3E77BC),
                   ),
-                  contentPadding: const EdgeInsets.symmetric(
+                  contentPadding: EdgeInsets.symmetric(
                     horizontal: 20,
                     vertical: 18,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
                   ),
                 ),
               ),
 
-              // --- OLVIDASTE CONTRASEÑA ---
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
@@ -187,7 +177,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 20),
 
-              // --- BOTÓN ENTRAR (CONECTADO AL CUBIT) ---
               BlocConsumer<AuthCubit, AuthState>(
                 listener: (context, state) {
                   if (state is AuthAuthenticated) {
@@ -227,7 +216,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                 return;
                               }
 
-                              // AHORA ENVIAMOS LOS 3 PARÁMETROS AL CUBIT
                               context.read<AuthCubit>().login(
                                 url: _urlController.text.trim(),
                                 email: _emailController.text.trim(),
@@ -266,7 +254,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 },
               ),
 
-              // --- BOTÓN PARA CAMBIAR SERVIDOR (Si ya estaba oculto) ---
               if (!_showUrlField) ...[
                 const SizedBox(height: 16),
                 TextButton.icon(

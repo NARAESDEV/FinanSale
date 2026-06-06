@@ -48,9 +48,9 @@ class _SelectorGenericoBottomSheetState<T>
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
       padding: const EdgeInsets.all(24),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
       ),
       child: Column(
         children: [
@@ -66,7 +66,7 @@ class _SelectorGenericoBottomSheetState<T>
               hintText: widget.hintText,
               prefixIcon: const Icon(Icons.search),
               filled: true,
-              fillColor: const Color(0xFFF1F5F9),
+              fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
                 borderSide: BorderSide.none,

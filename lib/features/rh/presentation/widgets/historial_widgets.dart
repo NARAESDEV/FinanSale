@@ -75,10 +75,10 @@ class StatCard extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               "$valor",
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.w800,
-                color: Color(0xFF1F2937),
+                color: Theme.of(context).colorScheme.onSurface,
                 height: 1,
               ),
             ),
@@ -114,10 +114,12 @@ class HistorialItemCard extends StatelessWidget {
 
     return PersonalizadoCard(
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          // Barra de estado lateral estirada para el nuevo tamaño
           Container(
             width: 4,
-            height: 40,
+            height: 75,
             margin: const EdgeInsets.only(left: 6),
             decoration: BoxDecoration(
               color: statusColor,
@@ -126,38 +128,75 @@ class HistorialItemCard extends StatelessWidget {
           ),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 16, 16, 16),
+              // Aumentamos el padding para dar mayor amplitud visual
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        //  Tipo de Trámite (Destacado)
                         Text(
-                          "Ciclo Solicitud #${item.id}",
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          item.tipoSolicitud.toUpperCase(),
+                          style: TextStyle(
                             fontSize: 15,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF1F2937),
+                            fontWeight: FontWeight.w900,
+                            color: Theme.of(context).colorScheme.onSurface,
+                            letterSpacing: 0.3,
                           ),
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: 4),
+
+                        // Nombre del Solicitante e ID
+                        Text(
+                          "Solicitante: ${item.nombre} (#${item.id})",
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.7),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+
+                        //  Nombre del Sustituto/Responsable
+                        Text(
+                          "A cargo: ${item.nombreSustituto}",
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.6),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+
+                        //  Rango de Fechas
                         Text(
                           "${item.fechaInicio} / ${item.fechaFin}",
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: Color(0xFF64748B),
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF3E77BC),
                           ),
                         ),
                       ],
                     ),
                   ),
+
+                  // Contenedor del Estado (Badge)
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,
-                      vertical: 4,
+                      vertical: 6,
                     ),
                     decoration: BoxDecoration(
                       color: statusBg,
@@ -176,7 +215,7 @@ class HistorialItemCard extends StatelessWidget {
                   const Icon(
                     Icons.chevron_right_rounded,
                     color: Color(0xFFCBD5E1),
-                    size: 20,
+                    size: 22,
                   ),
                 ],
               ),
