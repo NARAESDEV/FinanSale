@@ -1,6 +1,7 @@
 import 'package:finansale/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:finansale/features/auth/presentation/cubit/auth_state.dart';
 import 'package:finansale/features/rh/presentation/cubit/solicitudes_cubit.dart';
+import 'package:finansale/features/rh/presentation/widgets/notas_chat_sheet.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -141,6 +142,30 @@ class _DetalleSolicitudPageState extends State<DetalleSolicitudPage> {
             }
             return const SizedBox();
           },
+        ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          // Invoca el bottom sheet agnóstico pasándole el ID de la solicitud actual
+          NotasChatSheet.show(context, widget.idSolicitud);
+        },
+        elevation: 4,
+        backgroundColor: const Color(
+          0xFF3E77BC,
+        ), // Tu azul corporativo principal
+        icon: const Icon(
+          Icons.chat_bubble_rounded,
+          color: Colors.white,
+          size: 20,
+        ),
+        label: const Text(
+          " Notas",
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w800,
+            fontSize: 12,
+            letterSpacing: 0.3,
+          ),
         ),
       ),
     );
