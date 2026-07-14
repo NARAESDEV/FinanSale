@@ -24,7 +24,7 @@ class RhRemoteDataSource {
       List<dynamic> data = response.data;
       return data.map((json) => TipoSolicitudModel.fromJson(json)).toList();
     } on DioException catch (e) {
-      throw Exception('Error al obtener los tipos de solicitud');
+      throw Exception('Error al obtener los tipos de solicitud'  );
     }
   }
 

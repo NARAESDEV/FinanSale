@@ -2,12 +2,12 @@ import 'package:finansale/shared/widgets/modal_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import '../../auth/data/models/user_model.dart';
-import '../../auth/presentation/cubit/auth_cubit.dart';
-import '../../auth/presentation/cubit/auth_state.dart';
-import '../../rh/presentation/cubit/rh_cubit.dart';
-import '../../../shared/widgets/naraes_header.dart';
-import '../../../shared/widgets/personalizado_card.dart';
+import '../../../auth/data/models/user_model.dart';
+import '../../../auth/presentation/cubit/auth_cubit.dart';
+import '../../../auth/presentation/cubit/auth_state.dart';
+import '../../../rh/presentation/cubit/rh_cubit.dart';
+import '../../../../shared/widgets/naraes_header.dart';
+import '../../../../shared/widgets/personalizado_card.dart';
 
 class HubScreen extends StatelessWidget {
   const HubScreen({super.key});
@@ -130,6 +130,8 @@ class HubScreen extends StatelessWidget {
         return _ModuleConfig(Icons.business_center_outlined, Colors.indigo);
       case "Recursos Humanos":
         return _ModuleConfig(Icons.groups_outlined, const Color(0xFF3E77BC));
+      case "Asistencia":
+        return _ModuleConfig(Icons.timer, const Color(0xFF3E77BC));
       case "Usuarios":
         return _ModuleConfig(Icons.person_add_alt_1_outlined, Colors.teal);
       case "Productos":

@@ -1,4 +1,4 @@
-import 'package:finansale/features/auth/presentation/cubit/auth_cubit.dart';
+import 'package:finansale/features/asistencia/presentation/pages/asistencia_dashboard_page.dart';
 import 'package:finansale/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:finansale/features/auth/presentation/cubit/auth_state.dart';
 import 'package:finansale/features/hub/presentation/cubit/perfil_cubit.dart';
@@ -14,7 +14,6 @@ import 'package:finansale/features/rh/presentation/pages/historial_page.dart';
 import 'package:finansale/features/rh/presentation/pages/aprobaciones_pendientes_page.dart';
 import 'package:finansale/features/rh/presentation/pages/estado_solicitudes_page.dart';
 import 'package:finansale/features/rh/presentation/pages/nueva_solicitud_page.dart';
-import 'package:finansale/features/rh/presentation/pages/solicitudes_page.dart';
 import 'package:finansale/features/splash/presentation/splash_page.dart';
 import 'package:finansale/features/workspace/cubit/workspace_cubit.dart';
 import 'package:finansale/features/workspace/presentation/workspace_page.dart';
@@ -23,7 +22,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/login_screen.dart';
-import '../../features/hub/presentation/hub_screen.dart';
+import '../../features/hub/presentation/pages/hub_screen.dart';
 import '../../features/hub/presentation/main_wrapper.dart';
 import '../../features/rh/presentation/rh_dashboard_page.dart';
 
@@ -48,7 +47,8 @@ class AppRouter {
       // Protegemos el Hub para que no se salga de la app con un gesto
       GoRoute(
         path: '/hub',
-        builder: (context, state) => const NavGuard(child: HubScreen()),
+        builder: (context, state) =>
+            const NavGuard(child: AsistenciaDashboardPage()),
       ),
       GoRoute(
         path: '/lista-aprobaciones',
@@ -154,6 +154,11 @@ class AppRouter {
                 child: const PerfilPage(),
               ),
             ),
+          ),
+          GoRoute(
+            path: '/asistencia',
+            pageBuilder: (context, state) =>
+                const NoTransitionPage(child: AsistenciaDashboardPage()),
           ),
         ],
       ),
