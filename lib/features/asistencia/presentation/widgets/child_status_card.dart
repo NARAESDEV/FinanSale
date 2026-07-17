@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class ChildStatusCard extends StatelessWidget {
   final String avatarUrl;
@@ -36,8 +37,23 @@ class ChildStatusCard extends StatelessWidget {
     final statusTextColor = isInSchool ? blueColor : orangeColor;
     final timelineDotColor = isInSchool ? blueColor : purpleColor;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+    return GestureDetector(
+      onTap: () {
+        context.push(
+          '/asistencia/detalle',
+          extra: {
+            'childName': childName,
+            'avatarUrl': avatarUrl,
+            'grade': grade,
+            'schoolName': 'Primaria Red Oak',
+            'isInSchool': isInSchool,
+            'time': time,
+            'statusMessage': statusMessage,
+          },
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -225,8 +241,9 @@ class ChildStatusCard extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   // Widget auxiliar para los chips pequeños (Grado/Grupo) extraído para rendimiento
   Widget _buildBadge(String text, Color bgColor, Color textColor) {

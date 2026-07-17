@@ -1,4 +1,5 @@
 import 'package:finansale/features/asistencia/presentation/pages/asistencia_dashboard_page.dart';
+import 'package:finansale/features/asistencia/presentation/pages/child_detail_asistencia_page.dart';
 import 'package:finansale/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:finansale/features/auth/presentation/cubit/auth_state.dart';
 import 'package:finansale/features/hub/presentation/cubit/perfil_cubit.dart';
@@ -72,6 +73,23 @@ class AppRouter {
           },
           child: const EstadoSolicitudesPage(),
         ),
+      ),
+      GoRoute(
+        path: '/asistencia/detalle',
+        pageBuilder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          return NoTransitionPage(
+            child: ChildDetailAsistenciaPage(
+              childName: extra['childName'] ?? 'Leo Harrison',
+              avatarUrl: extra['avatarUrl'] ?? 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=150',
+              grade: extra['grade'] ?? 'Grado 4',
+              schoolName: extra['schoolName'] ?? 'Primaria Red Oak',
+              isInSchool: extra['isInSchool'] as bool?,
+              time: extra['time'] as String?,
+              statusMessage: extra['statusMessage'] as String?,
+            ),
+          );
+        },
       ),
       ShellRoute(
         builder: (context, state, child) => MainWrapper(child: child),
