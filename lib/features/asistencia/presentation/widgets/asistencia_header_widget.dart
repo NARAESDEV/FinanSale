@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 class AsistenciaHeaderWidget extends StatelessWidget {
   final String tutorName;
   final String avatarUrl; 
+  final VoidCallback? onProfileTap;
   
   const AsistenciaHeaderWidget({
     super.key,
     required this.tutorName,
     required this.avatarUrl,
+    this.onProfileTap,
   });
 
   @override
@@ -22,10 +24,14 @@ class AsistenciaHeaderWidget extends StatelessWidget {
         // Lado izquierdo: Avatar + Textos
         Row(
           children: [
-            CircleAvatar(
-              radius: 24,
-              backgroundColor: Colors.grey.shade300,
-              backgroundImage: NetworkImage(avatarUrl),
+            InkWell(
+              onTap: onProfileTap,
+              borderRadius: BorderRadius.circular(24),
+              child: CircleAvatar(
+                radius: 24,
+                backgroundColor: Colors.grey.shade300,
+                backgroundImage: NetworkImage(avatarUrl),
+              ),
             ),
             const SizedBox(width: 12),
             Column(

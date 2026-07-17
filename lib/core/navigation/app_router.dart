@@ -1,5 +1,7 @@
 import 'package:finansale/features/asistencia/presentation/pages/asistencia_dashboard_page.dart';
 import 'package:finansale/features/asistencia/presentation/pages/child_detail_asistencia_page.dart';
+import 'package:finansale/features/asistencia/presentation/pages/asistencia_ajustes_page.dart';
+import 'package:finansale/features/asistencia/presentation/pages/confirmar_hijo_page.dart';
 import 'package:finansale/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:finansale/features/auth/presentation/cubit/auth_state.dart';
 import 'package:finansale/features/hub/presentation/cubit/perfil_cubit.dart';
@@ -90,6 +92,18 @@ class AppRouter {
             ),
           );
         },
+      ),
+      GoRoute(
+        path: '/asistencia/ajustes',
+        pageBuilder: (context, state) => const NoTransitionPage(
+          child: AsistenciaAjustesPage(),
+        ),
+      ),
+      GoRoute(
+        path: '/asistencia/confirmar-hijo',
+        pageBuilder: (context, state) => const NoTransitionPage(
+          child: ConfirmarHijoPage(),
+        ),
       ),
       ShellRoute(
         builder: (context, state, child) => MainWrapper(child: child),

@@ -14,7 +14,6 @@ class BadgeReinforcementCard extends StatelessWidget {
   Widget build(BuildContext context) {
     const blueColor = Color(0xFF1E3A8A); // Azul oscuro para texto destacado
     const lightBgColor = Color(0xFFEFF6FF); // Fondo azul muy claro
-    const primaryColor = Color(0xFF1E293B);
     const mutedColor = Color(0xFF475569);
 
     return Container(

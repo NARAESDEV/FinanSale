@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../widgets/asistencia_header_widget.dart';
 import '../widgets/child_status_card.dart';
 import '../widgets/asistencia_stats_row.dart';
+import '../state/asistencia_state.dart';
 
 class AsistenciaDashboardPage extends StatelessWidget {
   const AsistenciaDashboardPage({super.key});
@@ -22,11 +24,12 @@ class AsistenciaDashboardPage extends StatelessWidget {
     Widget bodyContent = Column(
       children: [
         // 1. Header estático en la parte superior
-        const Padding(
-          padding: EdgeInsets.fromLTRB(20.0, 24.0, 20.0, 16.0),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20.0, 24.0, 20.0, 16.0),
           child: AsistenciaHeaderWidget(
             tutorName: 'Antonio Cornelio',
             avatarUrl: 'https://i.pravatar.cc/150?img=47',
+            onProfileTap: () => context.push('/asistencia/ajustes'),
           ),
         ),
 
@@ -62,29 +65,33 @@ class AsistenciaDashboardPage extends StatelessWidget {
 
                   const SizedBox(height: 20),
 
-                  // 3. Tarjetas de Hijos
-                  const ChildStatusCard(
-                    avatarUrl: 'https://i.pravatar.cc/150?img=11',
-                    childName: 'Josue Israel Vasquez',
-                    grade: 'Grado 3',
-                    group: 'Grupo A',
-                    isInSchool: true,
-                    statusLabel: 'En la escuela',
-                    lastUpdateLabel: 'Última actualización',
-                    time: '08:15 AM',
-                    statusMessage: 'Entrada a las instalaciones escolares',
-                  ),
-
-                  const ChildStatusCard(
-                    avatarUrl: 'https://i.pravatar.cc/150?img=5',
-                    childName: 'Mia ',
-                    grade: 'Grado 1',
-                    group: 'Grupo C',
-                    isInSchool: false,
-                    statusLabel: 'Ya salió',
-                    lastUpdateLabel: 'Salida registrada',
-                    time: '03:45 PM',
-                    statusMessage: 'Salida de las instalaciones escolares',
+                  // 3. Tarjetas de Hijos (Dinámicas con AsistenciaState)
+                  AnimatedBuilder(
+                    animation: AsistenciaState.instance,
+                    builder: (context, _) {
+                      final list = AsistenciaState.instance.hijosConfirmados;
+                      return ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        padding: EdgeInsets.zero,
+                        itemCount: list.length,
+                        itemBuilder: (context, idx) {
+                          final kid = list[idx];
+                          return ChildStatusCard(
+                            key: ValueKey(kid['childName']),
+                            avatarUrl: kid['avatarUrl'] ?? '',
+                            childName: kid['childName'] ?? '',
+                            grade: kid['grade'] ?? '',
+                            group: kid['group'] ?? '',
+                            isInSchool: kid['isInSchool'] ?? false,
+                            statusLabel: kid['statusLabel'] ?? '',
+                            lastUpdateLabel: kid['lastUpdateLabel'] ?? '',
+                            time: kid['time'] ?? '',
+                            statusMessage: kid['statusMessage'] ?? '',
+                          );
+                        },
+                      );
+                    },
                   ),
 
                   const SizedBox(height: 8),
