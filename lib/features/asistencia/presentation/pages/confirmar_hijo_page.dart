@@ -296,22 +296,23 @@ class _ConfirmarHijoPageState extends State<ConfirmarHijoPage>
                               borderRadius: BorderRadius.circular(20),
                             ),
                           ),
-                          onPressed: () => _onConfirm(hijo),
+                          onPressed: () => {},
+                          // onPressed: () => _onConfirm(hijo),
                           child: const Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(
-                                Icons.check_circle_outline_rounded,
-                                size: 20,
-                              ),
+                              // Icon(
+                              //   Icons.check_circle_outline_rounded,
+                              //   size: 20,
+                              // ),
                               SizedBox(width: 10),
-                              Text(
-                                'Sí, es mi hijo/a y confirmo',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                              // Text(
+                              //   'Sí, es mi hijo/a y confirmo',
+                              //   style: TextStyle(
+                              //     fontSize: 16,
+                              //     fontWeight: FontWeight.bold,
+                              //   ),
+                              // ),
                             ],
                           ),
                         ),
@@ -338,7 +339,7 @@ class _ConfirmarHijoPageState extends State<ConfirmarHijoPage>
                           child: const Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.error_outline_rounded, size: 20),
+                              // Icon(Icons.error_outline_rounded, size: 20),
                               SizedBox(width: 10),
                               Text(
                                 'Este NO es mi hijo/a',
