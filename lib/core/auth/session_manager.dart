@@ -1,12 +1,26 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../shared/widgets/personalizado_card.dart'; // Tu widget
 import '../../core/navigation/app_router.dart';
+import '../../features/auth/presentation/cubit/auth_cubit.dart';
 
 class SessionManager extends StatefulWidget {
   final Widget child;
   const SessionManager({super.key, required this.child});
+
+  static void logout(BuildContext context) {
+    final state = context.findAncestorStateOfType<_SessionManagerState>();
+    state?._inactivityTimer?.cancel();
+    state?._isDialogShowing = false;
+
+    try {
+      context.read<AuthCubit>().logout();
+    } catch (_) {}
+
+    context.go('/login');
+  }
 
   @override
   State<SessionManager> createState() => _SessionManagerState();
@@ -58,13 +72,14 @@ class _SessionManagerState extends State<SessionManager>
   }
 
   void _forceLogout() {
-    _inactivityTimer?.cancel();
-    _isDialogShowing = false;
-    // Usamos el Cubit para limpiar estado
-    // context.read<AuthCubit>().logout();
-    // // Redirigimos al Login
-    // context.go('/login');
-    AppRouter.rootNavigatorKey.currentContext?.go('/login');
+    final navContext = AppRouter.rootNavigatorKey.currentContext;
+    if (navContext != null) {
+      SessionManager.logout(navContext);
+    } else {
+      _inactivityTimer?.cancel();
+      _isDialogShowing = false;
+      AppRouter.rootNavigatorKey.currentContext?.go('/login');
+    }
   }
 
   bool _isDialogShowing = false;

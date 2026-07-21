@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:finansale/core/auth/session_manager.dart';
 import '../state/asistencia_state.dart';
 
 class AsistenciaAjustesPage extends StatefulWidget {
@@ -238,6 +239,31 @@ class _AsistenciaAjustesPageState extends State<AsistenciaAjustesPage> {
                 },
               ),
 
+              const SizedBox(height: 24),
+
+              // Sección: Sesión
+              const Text(
+                'Sesión',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: mutedColor,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              _buildSettingsTile(
+                icon: Icons.logout_rounded,
+                iconColor: Colors.redAccent,
+                title: 'Cerrar sesión',
+                subtitle: 'Cierra tu sesión de usuario de forma segura.',
+                trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: mutedColor),
+                onTap: () {
+                  _showLogoutConfirmationDialog(context);
+                },
+              ),
+
               const SizedBox(height: 48),
             ]),
           ),
@@ -260,6 +286,54 @@ class _AsistenciaAjustesPageState extends State<AsistenciaAjustesPage> {
       child: Scaffold(
         backgroundColor: const Color(0xFFF8FAFC),
         body: pageBody,
+      ),
+    );
+  }
+
+  void _showLogoutConfirmationDialog(BuildContext context) {
+    const primaryColor = Color(0xFF0F172A);
+    const mutedColor = Color(0xFF64748B);
+    const redColor = Color(0xFFEF4444);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Text(
+          '¿Cerrar sesión?',
+          style: TextStyle(fontWeight: FontWeight.bold, color: primaryColor),
+        ),
+        content: const Text(
+          '¿Estás seguro de que deseas salir? Deberás ingresar tus credenciales nuevamente para acceder.',
+          style: TextStyle(color: mutedColor, fontSize: 14, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Cancelar',
+              style: TextStyle(color: mutedColor, fontWeight: FontWeight.bold),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: redColor,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onPressed: () {
+              Navigator.pop(context); // Cerrar diálogo
+              SessionManager.logout(context); // Consumir del SessionManager
+            },
+            child: const Text(
+              'Sí, salir',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
       ),
     );
   }
