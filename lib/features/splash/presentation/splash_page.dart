@@ -56,7 +56,7 @@ class _SplashPageState extends State<SplashPage>
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Center(
         child: Lottie.asset(
-          'assets/animations/NARAESV1.json',
+          'assets/animations/naraesV3.json',
           controller: _controller,
           repeat: false,
           onLoaded: (composition) {

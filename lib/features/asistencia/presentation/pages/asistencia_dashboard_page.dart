@@ -3,16 +3,77 @@ import 'package:go_router/go_router.dart';
 import '../widgets/asistencia_header_widget.dart';
 import '../widgets/child_status_card.dart';
 import '../widgets/asistencia_stats_row.dart';
+import '../widgets/asistencia_navbar.dart';
 import '../state/asistencia_state.dart';
+import 'soluciones_page.dart';
 
-class AsistenciaDashboardPage extends StatelessWidget {
+class AsistenciaDashboardPage extends StatefulWidget {
   const AsistenciaDashboardPage({super.key});
+
+  @override
+  State<AsistenciaDashboardPage> createState() =>
+      _AsistenciaDashboardPageState();
+}
+
+class _AsistenciaDashboardPageState extends State<AsistenciaDashboardPage> {
+  int _selectedIndex = 0;
+  bool _solucionesVisited = false;
+
+  void _onDestinationSelected(int index) {
+    if (_selectedIndex == index) return;
+    setState(() {
+      _selectedIndex = index;
+      if (index == 1) {
+        _solucionesVisited = true;
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      // Usamos un fondo claro y estático para evitar sobrecargas de repintado
+      backgroundColor: Colors.white,
+      body: Stack(
+        children: [
+          // Vista 0: Inicio (siempre construida desde el inicio, conservando su estado y scroll)
+          Offstage(
+            offstage: _selectedIndex != 0,
+            child: TickerMode(
+              enabled: _selectedIndex == 0,
+              child: const _AsistenciaInicioView(),
+            ),
+          ),
+
+          // Vista 1: Soluciones (creación lazy la primera vez que el usuario la visita)
+          if (_solucionesVisited)
+            Offstage(
+              offstage: _selectedIndex != 1,
+              child: TickerMode(
+                enabled: _selectedIndex == 1,
+                child: const SolucionesPage(),
+              ),
+            ),
+        ],
+      ),
+      bottomNavigationBar: AsistenciaNavbar(
+        selectedIndex: _selectedIndex,
+        onDestinationSelected: _onDestinationSelected,
+      ),
+    );
+  }
+}
+
+/// Vista del Home actual conservada EXACTAMENTE en su diseño, lógica, widgets y comportamiento.
+/// Colocada como widget independiente para prevenir reconstrucciones innecesarias dentro del shell de navegación.
+class _AsistenciaInicioView extends StatelessWidget {
+  const _AsistenciaInicioView();
 
   @override
   Widget build(BuildContext context) {
     final mediaQueryData = MediaQuery.of(context);
     final isIOS = Theme.of(context).platform == TargetPlatform.iOS;
-    
+
     // Evitamos jank visual y distorsiones del texto en iOS (especialmente Pro Max con accesibilidad/Dynamic Type)
     // limitando el factor de escala a un rango controlado y seguro.
     final adjustedMediaQueryData = isIOS
@@ -108,11 +169,9 @@ class AsistenciaDashboardPage extends StatelessWidget {
       ],
     );
 
-    // Si es iOS y pantalla ancha (ej. Pro Max), centramos el layout con un MaxWidth 
+    // Si es iOS y pantalla ancha (ej. Pro Max), centramos el layout con un MaxWidth
     // para evitar que los elementos y los textos se estiren o ensanchen de manera desproporcionada.
-    Widget rootWidget = SafeArea(
-      child: bodyContent,
-    );
+    Widget rootWidget = SafeArea(child: bodyContent);
 
     if (isIOS) {
       rootWidget = Center(
@@ -123,13 +182,6 @@ class AsistenciaDashboardPage extends StatelessWidget {
       );
     }
 
-    return MediaQuery(
-      data: adjustedMediaQueryData,
-      child: Scaffold(
-        // Usamos un fondo claro y estático para evitar sobrecargas de repintado
-        backgroundColor: Colors.white,
-        body: rootWidget,
-      ),
-    );
+    return MediaQuery(data: adjustedMediaQueryData, child: rootWidget);
   }
 }
